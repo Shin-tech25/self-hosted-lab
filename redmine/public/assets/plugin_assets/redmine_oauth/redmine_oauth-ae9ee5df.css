@@ -1,0 +1,76 @@
+/*
+# frozen_string_literal: true
+
+# Redmine plugin OAuth
+#
+# Karel Pičman <karel.picman@kontron.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
+
+button#login-oauth-submit {
+  margin:auto;
+  display:block;
+}
+
+label[for="oauth_autologin"] {
+  margin:auto;
+  display:block;
+  width: fit-content;
+}
+
+div#oauth-form {
+  margin: auto;
+  width: 340px;
+}
+
+input#button_color {
+  padding: 0;
+}
+
+.oauth_hidden {
+  display: none;
+}
+
+button#login-oauth-submit:hover {
+  background: #dddddd !important;
+}
+
+fieldset.oauth_collapsible {
+  border-width: 2px 0 0 0;
+  border-color: #FDBF3B;
+  width: 340px;
+  margin: auto;
+}
+
+fieldset.oauth_collapsed>legend::before {
+  content: "\a0\25bc\a0";
+  color: #FDBF3B;
+  display: inline-block;
+  transform: rotate(-90deg);
+}
+
+fieldset.oauth_expanded>legend::before {
+  content: "\a0\25bc\a0";
+  color: #FDBF3B;
+}
+
+fieldset.oauth_collapsible > legend {
+  cursor: pointer;
+}
+
+legend.oauth_legend {
+  font-weight: bolder;
+}
