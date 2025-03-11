@@ -1,0 +1,166 @@
+/**
+ * Redmine - project management software
+ * Copyright (C) 2006-  Jean-Philippe Lang
+ * This code is released under the GNU General Public License.
+ */
+
+.jstBlock .hidden {
+    display: none;
+}
+.jstEditor {
+    padding-left: 0px;
+}
+.jstEditor textarea, .jstEditor iframe {
+    margin: 0;
+}
+.jstHandle {
+    height: 10px;
+    font-size: 0.1em;
+    cursor: s-resize;
+    /*background: transparent url("img/resizer.png") no-repeat 45% 50%;*/
+}
+#content .jstTabs.tabs {
+    margin-bottom: -1px;
+}
+#content .jstTabs.tabs ul {border-bottom:0;}
+#content .jstTabs.tabs li {
+    height: 42px;
+}
+#content .jstTabs.tabs li:before{
+    content: '';
+    display: inline-block;
+    vertical-align: middle;
+    height: 100%;
+}
+#content .jstTabs.tabs li a {
+    display: inline-block;
+    vertical-align: bottom;
+    line-height: 19px;
+    border-bottom: 1px solid transparent;
+}
+.jstElements {
+    display: inline-block;
+    vertical-align: bottom;
+    padding-left: 6px;
+    padding-bottom:2px;
+    height: 26px;
+}
+.wiki-preview {
+    background-color: #ffffff;
+    border: 1px solid #bbbbbb;
+}
+.wiki-preview p.empty-preview {color:#999; font-style:italic; margin-top:1em; text-align:center;}
+
+.jstElements button {
+    margin-right: 2px;
+    width : 24px;
+    height: 24px;
+    padding: 4px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: #ddd;
+    background-color : #f7f7f7;
+    background-position : 50% 50%;
+    background-repeat: no-repeat;
+    cursor:pointer;
+    opacity:0.7;
+}
+.jstElements button:hover {
+    border-color: #bbb;
+    background-color: #e5e5e5;
+    opacity:1;
+}
+.jstElements button span {
+    display : none;
+}
+.jstElements span {
+    display : inline;
+}
+
+.jstSpacer {
+    width : 0px;
+    font-size: 1px;
+    margin-right: 6px;
+}
+
+.jstElements .help { float: right; margin-right: 0.5em; padding-top: 8px; font-size: 0.9em; }
+.jstElements .help a {padding: 2px 0 2px 20px; background: url("/assets/help-872ce501.png") no-repeat 0 50%;}
+
+.table-generator td {
+    border: 2px solid #ccc;
+    background-color: white;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.table-generator td.selected-cell, .table-generator td:hover {
+    background-color: #759FCF;
+}
+
+.table-generator {
+    position: absolute;
+    border-collapse: collapse;
+}
+
+/* Buttons
+-------------------------------------------------------- */
+.jstb_strong {
+    background-image: url("/assets/jstoolbar/bold-9488b1ca.svg");
+}
+.jstb_em {
+    background-image: url("/assets/jstoolbar/italic-581bb903.svg");
+}
+.jstb_ins {
+    background-image: url("/assets/jstoolbar/underline-7f1532c4.svg");
+}
+.jstb_del {
+    background-image: url("/assets/jstoolbar/strikethrough-845fb06b.svg");
+}
+.jstb_code {
+    background-image: url("/assets/jstoolbar/letter-c-828e6ed3.svg");
+}
+.jstb_h1 {
+    background-image: url("/assets/jstoolbar/h1-2c820a9f.svg");
+}
+.jstb_h2 {
+    background-image: url("/assets/jstoolbar/h2-e48db650.svg");
+}
+.jstb_h3 {
+    background-image: url("/assets/jstoolbar/h3-97122049.svg");
+}
+.jstb_ul {
+    background-image: url("/assets/jstoolbar/list-3397686a.svg");
+}
+.jstb_ol {
+    background-image: url("/assets/jstoolbar/list-numbers-9bd169a5.svg");
+}
+.jstb_tl {
+    background-image: url("/assets/jstoolbar/list-check-cccb4f48.svg");
+}
+.jstb_bq {
+    background-image: url("/assets/jstoolbar/indent-increase-16ddf219.svg");
+}
+.jstb_unbq {
+    background-image: url("/assets/jstoolbar/indent-decrease-7146c0c1.svg");
+}
+.jstb_pre::before {
+    content: "pre";
+    font-size: 10px;
+    color: #333;
+    font-weight: 700
+}
+.jstb_precode {
+    background-image: url("/assets/jstoolbar/code-099ac2b5.svg");
+}
+.jstb_link {
+    background-image: url("/assets/jstoolbar/wiki_link-6a9c9575.svg");
+}
+.jstb_img {
+    background-image: url("/assets/jstoolbar/image-0b4f4f05.svg");
+}
+.jstb_table {
+    background-image: url("/assets/jstoolbar/table-0cf07e5d.svg");
+}
+.jstb_help {
+    background-image: url("/assets/jstoolbar/help-16e39147.svg");
+}

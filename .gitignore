@@ -1,0 +1,25 @@
+# growi/ の全ファイルを無視
+growi/
+
+# blog/ の全ファイルを無視
+blog/
+
+# containered/ の全ファイルを無視
+containerd/
+
+# ただし、以下の設定ファイルは Git に含める
+!growi/docker-compose.yml
+!growi/docker-compose.override.yml
+
+# バックアップファイルを無視
+*.bk
+*.bak
+*.bk.*
+*.bak.*
+
+# 環境変数ファイル
+.env
+
+# 証明書
+*.crt
+*.key

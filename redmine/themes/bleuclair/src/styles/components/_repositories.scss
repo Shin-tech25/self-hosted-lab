@@ -1,0 +1,77 @@
+// forum(board)
+
+.controller-repositories.action-revision, .controller-repositories.action-diff {
+  #content > div.message {
+    border-radius: 3px;
+    background-color: $color-history-bg;
+    border: 1px solid $color-history-border;
+    padding: $histry-padding;
+  }
+
+  &.avatars-on .details {
+    h4 {
+      left: 35px;
+      position: relative;
+      margin: $note-title-margin;
+      border: none;
+      font-weight: bold;
+      background-color: $color-note-title-bg;
+      padding: $note-title-padding;
+      font-size: 0.9em;
+      border-radius: 4px;
+
+      a[href*="activity"][data-absolute-date*=":"] {
+        box-shadow: none;
+        padding: 0;
+      }
+
+      &:before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 8px;
+        width: 0;
+        height: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-right: 6px solid $color-note-title-bg;
+      }
+
+      .gravatar {
+        position: absolute;
+        left: -35px;
+        z-index: 5;
+        margin-left: 0;
+      }
+    }
+  }
+
+  &.avatars-off .details {
+    h4 {
+      margin: $note-title-margin;
+      border: none;
+      font-weight: bold;
+      background-color: $color-note-title-bg;
+      padding: $note-title-padding;
+      font-size: 0.9em;
+      border-radius: 4px;
+
+      a[href*="activity"][data-absolute-date*=":"] {
+        box-shadow: none;
+        padding: 0;
+      }
+    }
+  }
+
+  .wiki.changeset-comments, #related-issues, .revision-info {
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 3px;
+    border: 1px solid #dfe8f1;
+    margin: 5px;
+  }
+
+  .revision-info {
+    padding-left: 20px;
+  }
+}

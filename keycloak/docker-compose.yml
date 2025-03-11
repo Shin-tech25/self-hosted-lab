@@ -1,0 +1,56 @@
+version: "3"
+
+services:
+  keycloak:
+    build: .
+    container_name: keycloak
+    env_file:
+      - .env
+    environment:
+      - KC_DB=mysql
+      - KC_DB_URL=jdbc:mysql://keycloak-db:3306/${MYSQL_DATABASE}
+      - KC_DB_USERNAME=${KC_DB_USERNAME}
+      - KC_DB_PASSWORD=${KC_DB_PASSWORD}
+      - KC_BOOTSTRAP_ADMIN_USERNAME=${KC_BOOTSTRAP_ADMIN_USERNAME}
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      - KC_HOSTNAME=${KC_HOSTNAME}
+      - KC_HTTP_ENABLED=false
+      - KC_HTTPS_CERTIFICATE_FILE=/etc/x509/https/tls.crt
+      - KC_HTTPS_CERTIFICATE_KEY_FILE=/etc/x509/https/tls.key
+    ports:
+      - "3002:8443"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy # MySQL が起動完了するまで待機
+    restart: unless-stopped
+    volumes:
+      - ./tls.crt:/etc/x509/https/tls.crt:ro
+      - ./tls.key:/etc/x509/https/tls.key:ro
+    networks:
+      - shared_network
+
+  keycloak-db:
+    image: mysql:8
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - keycloak_db_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck: # MySQL の起動を確認するヘルスチェック
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    networks:
+      - shared_network
+
+volumes:
+  keycloak_db_data:
+
+networks:
+  shared_network:
+    external: true

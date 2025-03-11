@@ -1,0 +1,100 @@
+version: "3.8"
+
+services:
+  app:
+    image: redmine:latest
+    ports:
+      - "3001:3000"
+    container_name: redmine
+    env_file:
+      - .env
+    environment:
+      - REDMINE_DB_MYSQL=${REDMINE_DB_MYSQL}
+      - REDMINE_DB_USERNAME=${REDMINE_DB_USERNAME}
+      - REDMINE_DB_PASSWORD=${REDMINE_DB_PASSWORD}
+      - REDMINE_DB_DATABASE=${REDMINE_DB_DATABASE}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - redmine_files:/usr/src/redmine/files
+      - redmine_config:/usr/src/redmine/config
+      - redmine_themes:/usr/src/redmine/themes
+      - redmine_log:/usr/src/redmine/log
+      - redmine_plugins:/usr/src/redmine/plugins
+      - redmine_tmp:/usr/src/redmine/tmp
+      - redmine_public:/usr/src/redmine/public
+    restart: unless-stopped
+    networks:
+      - default
+      - shared_network
+
+  db:
+    image: mysql:5.7
+    container_name: redmine_db
+    env_file:
+      - .env
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    networks:
+      - default
+
+volumes:
+  redmine_files:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/files
+  redmine_config:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/config
+  redmine_themes:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/themes
+  redmine_log:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/log
+  redmine_plugins:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/plugins
+  redmine_tmp:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/tmp
+  redmine_public:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/redmine/public
+  db_data:
+
+networks:
+  default:
+  shared_network:
+    external: true

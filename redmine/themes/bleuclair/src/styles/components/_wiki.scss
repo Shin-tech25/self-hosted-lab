@@ -1,0 +1,16 @@
+div.wiki {
+  h1, h2, h3, h4 {
+    font-weight: bold;
+  }
+  ul.toc {
+    background-color: $color-issue-bg;
+    border: none;
+    padding: 9px;
+    border-radius: 4px;
+  }
+}
+
+/* Fix an issue where the default line-height is 1.5em, which breaks the layout. */
+.box div.wiki-preview {
+  line-height: 1.5;
+}
