@@ -42,7 +42,7 @@ services:
       - keycloak_db_data:/var/lib/mysql
     restart: no
     healthcheck: # MySQL の起動を確認するヘルスチェック
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "sh", "-c", "mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       retries: 5
     networks:
