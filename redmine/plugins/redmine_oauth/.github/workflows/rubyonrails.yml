@@ -1,0 +1,81 @@
+# Redmine plugin for OAuth
+#
+# Karel Pičman <karel.picman@kontron.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# GitHub CI script
+
+name: "GitHub CI"
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+jobs:
+  plugin_tests:
+    runs-on: ubuntu-latest
+    env:
+      RAILS_ENV: test
+      NAME: redmine_oauth
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install subversion
+      - name: Clone Redmine
+        # Get the latest stable Redmine and fix the conflict in gems
+        run: |
+          svn export https://svn.redmine.org/redmine/branches/6.0-stable/ /opt/redmine
+          sed -i "s/gem 'net-imap'/#gem 'net-imap'/" /opt/redmine/Gemfile
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Link the plugin
+        # Link the plugin to the redmine folder
+        run: | 
+          ln -s $(pwd) /opt/redmine/plugins/redmine_oauth
+      - name: Install Ruby and gems
+        uses: ruby/setup-ruby@v1 # The latest major version
+        with:
+          bundler-cache: true
+          ruby-version: '3.2'
+      - name: Setup database
+        # Configure the database
+        run: |
+          echo "test:" > /opt/redmine/config/database.yml
+          echo "  adapter: sqlite3" >> /opt/redmine/config/database.yml
+          echo "  database: db/redmine.sqlite3" >> /opt/redmine/config/database.yml
+      - name: Install Redmine
+        # Install Redmine
+        run: |
+          cd /opt/redmine                    
+          bundle config set --local without 'rmagick development'
+          bundle install
+          bundle exec rake generate_secret_token
+          bundle exec rake db:migrate          
+          bundle exec rake redmine:load_default_data
+          bundle exec rake assets:precompile
+        env:
+          REDMINE_LANG: en
+      - name: Standard tests
+        # Run the tests
+        run: |
+          cd /opt/redmine          
+          bundle exec rake redmine:plugins:test:functionals                    
+      - name: Rubocop
+        # Run the Rubocop tests
+        run: |
+          cd /opt/redmine                    
+          bundle exec rubocop -c plugins/redmine_oauth/.rubocop.yml plugins/redmine_oauth/          
