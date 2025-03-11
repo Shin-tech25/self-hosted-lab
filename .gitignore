@@ -23,3 +23,6 @@ containerd/
 # 証明書
 *.crt
 *.key
+
+# Redmine
+database.yml
