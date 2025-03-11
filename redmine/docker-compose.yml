@@ -24,6 +24,8 @@ services:
       - redmine_plugins:/usr/src/redmine/plugins
       - redmine_tmp:/usr/src/redmine/tmp
       - redmine_public:/usr/src/redmine/public
+      - ./Gemfile:/usr/src/redmine/Gemfile
+      - ./Gemfile.lock:/usr/src/redmine/Gemfile.lock
     restart: unless-stopped
     networks:
       - default
