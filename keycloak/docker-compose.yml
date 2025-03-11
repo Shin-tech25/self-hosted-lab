@@ -40,7 +40,7 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
     volumes:
       - keycloak_db_data:/var/lib/mysql
-    restart: unless-stopped
+    restart: no
     healthcheck: # MySQL の起動を確認するヘルスチェック
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
