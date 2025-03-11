@@ -24,7 +24,13 @@ GROWI ログイン画面にて、
 OidcStrategy has not been set up
 ```
 
-のようなエラーが出力されてしまう。原因は不明だが、Keycloak、GROWI, https-potal コンテナの再起動を行うと、接続に成功する。
+のようなエラーが出力されてしまう。おそらくコンテナ起動のタイミングの問題と思われるが、Keycloak+https-portal、GROWI+https-portal の順番でコンテナの再起動を行うと、接続に成功する。
+
+```
+growi                  | {"name":"growi:service:PassportService","hostname":"976b2fb25340","pid":1,"level":20,"msg":"OidcStrategy: setup is done","time":"2025-03-11T14:01:12.564Z","v":0}
+```
+
+上記のようなログが出力されていると、Keycloak 連携に成功している。
 
 詳細な分析が必要。
 
