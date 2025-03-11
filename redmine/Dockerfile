@@ -1,5 +1,7 @@
 FROM redmine:latest
 
+RUN apt-get update && apt-get install -y build-essential
+
 # 作業ディレクトリを設定（Redmine公式イメージの作業ディレクトリは /usr/src/redmine）
 WORKDIR /usr/src/redmine
 
