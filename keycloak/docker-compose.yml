@@ -17,8 +17,8 @@ services:
       - KC_HTTP_ENABLED=false
       - KC_HTTPS_CERTIFICATE_FILE=/etc/x509/https/tls.crt
       - KC_HTTPS_CERTIFICATE_KEY_FILE=/etc/x509/https/tls.key
-    ports:
-      - "3002:8443"
+    # ports:
+    #   - "3002:8443"
     depends_on:
       keycloak-db:
         condition: service_healthy # MySQL が起動完了するまで待機
