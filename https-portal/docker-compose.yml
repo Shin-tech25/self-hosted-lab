@@ -11,7 +11,10 @@ services:
     # links:
     # - app:app
     environment:
-      DOMAINS: "portal.mshin0509.com -> http://growi:3000, redmine.mshin0509.com -> http://redmine:3000, auth.mshin0509.com -> https://keycloak:8443"
+      DOMAINS: >
+        portal.mshin0509.com -> http://growi:3000,
+        redmine.mshin0509.com -> http://redmine:3000,
+        auth.mshin0509.com -> https://keycloak:8443
       STAGE: "production"
       FORCE_RENEW: "false"
       WEBSOCKET: "true"
