@@ -11,9 +11,6 @@ docker compose up -d
 echo 'Started keycloak.'
 cd -
 
-echo 'Waiting for 180 seconds to boot up keycloak.'
-sleep 180
-
 echo 'Starting growi...'
 cd growi/
 docker compose up -d
