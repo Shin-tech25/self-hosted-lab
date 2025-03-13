@@ -28,3 +28,12 @@ cd https-portal/
 docker compose restart
 echo 'Started redmine.'
 cd -
+
+echo 'Starting nextcloud...'
+cd nextcloud/
+docker compose up -d
+cd -
+cd https-portal/
+docker compose restart
+echo 'Started nextcloud.'
+cd -
