@@ -56,6 +56,28 @@ docker exec -u 33 -it nextcloud php occ files:scan --all
 
 スマホアプリでのロックがかかった際は、キャッシュが残っている可能性もあるので、クライアント側のアプリ再起動を行う。
 
+#### プレビューの生成
+
+Nextcloud 内のアプリケーション **Preview Generator** を利用して、以下のコマンドを実行すると、予めプレビュー画像を生成することが可能である。
+
+以下のコマンドは、全てのファイルを対象としているため、特に初回実行時には負荷がかかる。
+
+```bash
+docker exec --user www-data nextcloud php occ preview:generate-all -vvv
+```
+
+新規または更新されたファイルを対象としてプレビュー画像を生成するには以下のコマンドを利用する。
+
+```bash
+docker exec --user www-data nextcloud php occ preview:pre-generate -vvv
+```
+
+なお、プレビューをリセットするには、以下のコマンドを利用する。
+
+```bash
+docker exec --user www-data nextcloud php occ preview:cleanup
+```
+
 ### コンテナ運用に関する注意
 
 バインドマウントされていないコンテナ内のデータがあるため、不用意にボリュームを削除しないように注意する。
