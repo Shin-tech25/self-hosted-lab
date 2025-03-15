@@ -42,6 +42,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      onlyoffice:
+        condition: service_started
     env_file:
       - .env
     environment:
@@ -62,6 +64,7 @@ services:
       - PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT}
       - PHP_UPLOAD_LIMIT=${PHP_UPLOAD_LIMIT}
       - REDIS_HOST=${REDIS_HOST}
+      - NEXTCLOUD_ONLYOFFICE_URL=${NEXTCLOUD_ONLYOFFICE_URL}
     volumes:
       - nextcloud_data:/var/www/html/data
       - ./config:/var/www/html/config:z
@@ -69,10 +72,25 @@ services:
     networks:
       - shared_network
 
+  onlyoffice:
+    image: onlyoffice/documentserver
+    container_name: onlyoffice
+    restart: no
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET} # .env で設定
+    tmpfs:
+      - /var/www/onlyoffice/Data:size=500M,mode=1777
+    volumes:
+      - onlyoffice_log:/var/log/onlyoffice
+    networks:
+      - shared_network
+
 volumes:
   nextcloud_db_data:
   nextcloud_data:
   nextcloud_apps:
+  onlyoffice_log:
 
 networks:
   shared_network:
