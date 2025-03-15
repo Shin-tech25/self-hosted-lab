@@ -1,0 +1,79 @@
+version: "3"
+
+services:
+  nextcloud-db:
+    image: mysql:8
+    container_name: nextcloud-db
+    restart: no
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+    healthcheck:
+      test: ["CMD", "sh", "-c", "mysqladmin ping -uroot -p$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      retries: 5
+    volumes:
+      - nextcloud_db_data:/var/lib/mysql
+    networks:
+      - shared_network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: no
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shared_network
+
+  nextcloud:
+    build: .
+    container_name: nextcloud
+    restart: no
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - NEXTCLOUD_INSTANCE_ID=${NEXTCLOUD_INSTANCE_ID}
+      - NEXTCLOUD_PASSWORD_SALT=${NEXTCLOUD_PASSWORD_SALT}
+      - NEXTCLOUD_SECRET=${NEXTCLOUD_SECRET}
+      - NEXTCLOUD_OVERWRITE_CLI_URL=${NEXTCLOUD_OVERWRITE_CLI_URL}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAINS}
+      - OBJECTSTORE_S3_REGION=${OBJECTSTORE_S3_REGION}
+      - OBJECTSTORE_S3_HOST=${OBJECTSTORE_S3_HOST}
+      - OBJECTSTORE_S3_BUCKET=${OBJECTSTORE_S3_BUCKET}
+      - OBJECTSTORE_S3_KEY=${OBJECTSTORE_S3_KEY}
+      - OBJECTSTORE_S3_SECRET=${OBJECTSTORE_S3_SECRET}
+      - PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT}
+      - PHP_UPLOAD_LIMIT=${PHP_UPLOAD_LIMIT}
+      - REDIS_HOST=${REDIS_HOST}
+    volumes:
+      - nextcloud_data:/var/www/html/data
+      - ./config:/var/www/html/config:z
+      - nextcloud_apps:/var/www/html/custom_apps
+    networks:
+      - shared_network
+
+volumes:
+  nextcloud_db_data:
+  nextcloud_data:
+  nextcloud_apps:
+
+networks:
+  shared_network:
+    external: true
