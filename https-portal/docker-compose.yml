@@ -15,6 +15,7 @@ services:
         portal.mshin0509.com -> http://growi:3000,
         redmine.mshin0509.com -> http://redmine:3000,
         nextcloud.mshin0509.com -> http://nextcloud:80,
+        onlyoffice.mshin0509.com -> http://onlyoffice:80,
         auth.mshin0509.com -> https://keycloak:8443
       STAGE: "production"
       FORCE_RENEW: "false"
