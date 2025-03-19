@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  jupyterhub:
+    build: .
+    container_name: jupyterhub
+    restart: no
+    volumes:
+      - ./jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py:ro
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      - /home:/home
+    # 必要に応じて環境変数ファイル（.env）を利用する
+    # env_file:
+    #   - .env
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    external: true
