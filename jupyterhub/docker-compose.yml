@@ -11,8 +11,8 @@ services:
       - /etc/group:/etc/group:ro
       - /home:/home
     # 必要に応じて環境変数ファイル（.env）を利用する
-    # env_file:
-    #   - .env
+    env_file:
+      - .env
     networks:
       - shared_network
 
