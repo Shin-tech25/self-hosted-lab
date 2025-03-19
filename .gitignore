@@ -26,3 +26,6 @@ containerd/
 
 # Redmine
 database.yml
+
+# JupyterHub
+jupyterhub_config.py
