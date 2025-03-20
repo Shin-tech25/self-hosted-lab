@@ -1,0 +1,9 @@
+{
+  "markdown-pdf.displayHeaderFooter": true,
+  "markdown-pdf.headerTemplate": "<div style='width:100%; text-align:right; font-size:10px; margin-right: 40px'><span class='date'></span></div>",
+  "markdown-pdf.footerTemplate": "<div style='width:100%; text-align:center; font-size: 10px;'><span class='pageNumber'></span> / <span class='totalPages'></span></div>",
+  "markdown-pdf.margin.top": "20mm",
+  "markdown-pdf.margin.bottom": "20mm",
+  "markdown-pdf.highlight": false, // シンタックスハイライトを無効にする
+  "markdown-pdf.styles": ["./vscode/custom.css"]
+}
