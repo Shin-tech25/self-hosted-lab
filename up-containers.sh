@@ -37,3 +37,12 @@ cd https-portal/
 docker compose restart
 echo 'Started nextcloud.'
 cd -
+
+echo 'Starting jupyterhub...'
+cd jupyterhub/
+docker compose up -d
+cd -
+cd https-portal/
+docker compose restart
+echo 'Started jupyterhub.'
+cd -
