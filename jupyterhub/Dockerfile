@@ -1,10 +1,10 @@
 FROM jupyterhub/jupyterhub:latest
 
-# OIDC 連携に必要な oauthenticator をインストール
-RUN pip install oauthenticator
+# ローカルの requirements.txt をイメージにコピー
+COPY requirements.txt .
 
-# シングルユーザーサーバー用にjupyterlabをインストール
-RUN pip install jupyterlab
+# パッケージをインストール
+RUN pip install --no-cache-dir -r requirements.txt
 
 # 内部で利用するポート (https-portal 経由でアクセス)
 EXPOSE 8000
