@@ -3,6 +3,9 @@ FROM jupyterhub/jupyterhub:latest
 # ローカルの requirements.txt をイメージにコピー
 COPY requirements.txt .
 
+# pip のアップデート
+RUN pip install --upgrade pip
+
 # パッケージをインストール
 RUN pip install --no-cache-dir -r requirements.txt
 
