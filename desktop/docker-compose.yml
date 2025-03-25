@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mariadb:10.5
+    container_name: guac-mysql
+    restart: no
+    env_file:
+      - .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - guac-mysql-data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    networks:
+      - default
+
+  guacd:
+    image: guacamole/guacd
+    container_name: guacd
+    restart: no
+    networks:
+      - default
+
+  guacamole:
+    image: guacamole/guacamole
+    container_name: guacamole
+    restart: no
+    environment:
+      GUACD_HOSTNAME: guacd
+      MYSQL_HOSTNAME: guac-mysql
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - guacd
+      - mysql
+    networks:
+      - default
+      - shared_network
+
+  xrdp:
+    build: ./xrdp
+    container_name: xrdp
+    restart: no
+    volumes:
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+      - /etc/group:/etc/group:ro
+      - /home:/home
+    networks:
+      - default
+
+networks:
+  default:
+  shared_network:
+    external: true
+
+volumes:
+  guac-mysql-data:
