@@ -17,6 +17,7 @@ services:
         nextcloud.mshin0509.com -> http://nextcloud:80,
         onlyoffice.mshin0509.com -> http://onlyoffice:80,
         jupyterhub.mshin0509.com -> http://jupyterhub:8000,
+        desktop.mshin0509.com -> http://guacamole:8080,
         auth.mshin0509.com -> https://keycloak:8443
       STAGE: "production"
       FORCE_RENEW: "false"
