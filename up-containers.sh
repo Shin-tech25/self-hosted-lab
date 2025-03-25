@@ -46,3 +46,12 @@ cd https-portal/
 docker compose restart
 echo 'Started jupyterhub.'
 cd -
+
+echo 'Starting desktop...'
+cd desktop/
+docker compose up -d
+cd -
+cd https-portal/
+docker compose restart
+echo 'Started desktop.'
+cd -

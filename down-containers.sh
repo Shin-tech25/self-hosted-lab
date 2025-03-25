@@ -17,6 +17,9 @@ cd -
 cd jupyterhub/
 docker compose down
 cd -
+cd desktop/
+docker compose down
+cd -
 cd https-portal
 docker compose down
 cd -
