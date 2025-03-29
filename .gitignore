@@ -4,6 +4,9 @@ growi/
 # blog/ の全ファイルを無視
 blog/
 
+# alphadata/ の全ファイルを無視
+alphadata/
+
 # containered/ の全ファイルを無視
 containerd/
 
