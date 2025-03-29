@@ -56,6 +56,30 @@ docker exec -u 33 -it nextcloud php occ files:scan --all
 
 スマホアプリでのロックがかかった際は、キャッシュが残っている可能性もあるので、クライアント側のアプリ再起動を行う。
 
+メンテナンスモード起動
+
+```bash
+docker exec --user www-data -it nextcloud php occ maintenance:mode --on
+```
+
+ファイルロックのテーブルを削除
+
+```bash
+docker exec --user www-data -it nextcloud php occ maintenance:repair
+```
+
+メンテナンスモードオフ
+
+```bash
+docker exec --user www-data -it nextcloud php occ maintenance:mode --off
+```
+
+ログ確認
+
+```bash
+docker exec -it nextcloud tail -n 50 /var/www/html/data/nextcloud.log
+```
+
 #### プレビューの生成
 
 Nextcloud 内のアプリケーション **Preview Generator** を利用して、以下のコマンドを実行すると、予めプレビュー画像を生成することが可能である。
@@ -77,6 +101,8 @@ docker exec --user www-data nextcloud php occ preview:pre-generate -vvv
 ```bash
 docker exec --user www-data nextcloud php occ preview:cleanup
 ```
+
+プレビュー処理は動画などサイズが大きい場合は非常に重く、その間ファイルロックされるためリネームなどできない点に注意する。
 
 ### コンテナ運用に関する注意
 
