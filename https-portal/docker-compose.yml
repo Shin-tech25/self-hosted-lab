@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   # a fully automated HTTPS server powered by Nginx, Let's Encrypt
   # see https://github.com/SteveLTN/https-portal
@@ -18,12 +16,13 @@ services:
         onlyoffice.mshin0509.com -> http://onlyoffice:80,
         jupyterhub.mshin0509.com -> http://jupyterhub:8000,
         desktop.mshin0509.com -> http://guacamole:8080,
+        cockpit.mshin0509.com -> https://140.227.119.163:9090,
         auth.mshin0509.com -> https://keycloak:8443
       STAGE: "production"
       FORCE_RENEW: "false"
       WEBSOCKET: "true"
       CLIENT_MAX_BODY_SIZE: 0
-    restart: no
+    restart: unless-stopped
     volumes:
       - https-portal_data:/var/lib/https-portal
     networks:
