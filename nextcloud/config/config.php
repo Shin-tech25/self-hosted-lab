@@ -6,8 +6,8 @@ $CONFIG = array (
   'redis' => 
   array (
     'host' => getenv('REDIS_HOST'),
+    'port' => getenv('REDIS_PORT'),
     'password' => '',
-    'port' => 6379,
   ),
   'apps_paths' => 
   array (
