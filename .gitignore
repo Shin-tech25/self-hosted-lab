@@ -4,6 +4,9 @@ growi/
 # blog/ の全ファイルを無視
 blog/
 
+# docs/ の全ファイルを無視
+docs/
+
 # alphadata/ の全ファイルを無視
 alphadata/
 
