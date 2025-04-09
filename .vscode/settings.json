@@ -5,5 +5,5 @@
   "markdown-pdf.margin.top": "20mm",
   "markdown-pdf.margin.bottom": "20mm",
   "markdown-pdf.highlight": false, // シンタックスハイライトを無効にする
-  "markdown-pdf.styles": ["./vscode/custom.css"]
+  "markdown-pdf.styles": ["/opt/.vscode/custom.css"]
 }
