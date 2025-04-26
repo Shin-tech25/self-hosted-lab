@@ -55,3 +55,8 @@ cd https-portal/
 docker compose restart
 echo 'Started desktop.'
 cd -
+
+echo 'Restarting growi...'
+cd growi/
+docker compose restart
+cd -
