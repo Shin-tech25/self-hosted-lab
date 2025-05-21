@@ -1,0 +1,27 @@
+OC.L10N.register(
+    "audioplayer",
+    {
+    "Selected" : "Selected",
+    "Help" : "Trợ giúp",
+    "New in" : "Mới trong",
+    "View changelog" : "Xem nhật ký thay đổi",
+    "Are you sure?" : "Bạn chắc chắn?",
+    "Folders" : "Thư mục",
+    "Tags" : "Nhãn",
+    "Years" : "Năm",
+    "Saved" : "Đã lưu",
+    "Title" : "Tiêu đề",
+    "Year" : "Năm",
+    "Copyright" : "Bản quyền",
+    "Favorited" : "Được ưa thích",
+    "Favorite" : "Ưa thích",
+    "Remove" : "Xoá",
+    "Favorites" : "Ưa thích",
+    "Unknown" : "Không xác định",
+    "URL" : "URL",
+    "Cancel" : "Hủy",
+    "Close" : "Đóng",
+    "Settings" : "Cài đặt",
+    "Advanced Settings" : "Cài đặt nâng cao"
+},
+"nplurals=1; plural=0;");
