@@ -13,6 +13,9 @@ alphadata/
 # containered/ の全ファイルを無視
 containerd/
 
+# youtube/ の全ファイルを無視
+youtube/
+
 # ただし、以下の設定ファイルは Git に含める
 !growi/docker-compose.yml
 !growi/docker-compose.override.yml
