@@ -45,8 +45,8 @@ version: 1.2.0
 license: GPL-3.0-or-later
 
 @nextcloud/cdav-library
-version: 1.5.2
-license: AGPL-3.0
+version: 1.5.3
+license: AGPL-3.0-or-later
 
 @nextcloud/dialogs
 version: 5.3.8
@@ -57,7 +57,7 @@ version: 3.3.2
 license: GPL-3.0-or-later
 
 @nextcloud/files
-version: 3.10.1
+version: 3.10.2
 license: AGPL-3.0-or-later
 
 @nextcloud/initial-state
@@ -85,7 +85,7 @@ version: 3.0.1
 license: GPL-3.0-or-later
 
 @nextcloud/sharing
-version: 0.2.3
+version: 0.2.4
 license: GPL-3.0-or-later
 
 @nextcloud/timezones
@@ -93,7 +93,7 @@ version: 0.1.1
 license: AGPL-3.0-or-later
 
 @nextcloud/vue
-version: 8.24.0
+version: 8.25.1
 license: AGPL-3.0-or-later
 
 @nextcloud/vue-select
@@ -365,7 +365,11 @@ version: 5.1.3
 license: MIT
 
 uuid
-version: 11.0.5
+version: 11.1.0
+license: MIT
+
+validator
+version: 13.15.0
 license: MIT
 
 vite-plugin-node-polyfills
