@@ -1,0 +1,25 @@
+OC.L10N.register(
+    "metadata",
+    {
+    "Location" : "Atrašanās vieta",
+    "Metadata" : "Metadati",
+    "Title" : "Amats",
+    "Copyright" : "Autortiesības",
+    "Year" : "Gads",
+    "Date" : "Datums",
+    "Comment" : "Piebilde",
+    "Description" : "Apraksts",
+    "Rating" : "Vērtējums",
+    "People" : "Cilvēki",
+    "Tags" : "Birkas",
+    "Instructions" : "Norādes gatavošanai",
+    "Credits" : "Kredīti",
+    "Source" : "Avots",
+    "Subject" : "Temats",
+    "Created" : "Izveidots",
+    "Modified" : "Mainīts",
+    "Manual" : "Manuāli",
+    "Unknown" : "Nezināms",
+    "Other" : "Cits"
+},
+"nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);");

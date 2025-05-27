@@ -1,0 +1,47 @@
+language: php
+os: linux
+dist: jammy
+php:
+  - 8.1
+  - 8.2
+  - 8.3
+  - 8.4
+
+services:
+  - postgresql
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+
+env:
+  global:
+    - APP_NAME=metadata
+  jobs:
+    - CLOUD=nextcloud CORE_BRANCH=stable29
+    - CLOUD=nextcloud CORE_BRANCH=stable30
+    - CLOUD=nextcloud CORE_BRANCH=stable31
+    - CLOUD=nextcloud CORE_BRANCH=master
+
+jobs:
+  exclude:
+    - php: 8.4
+      env: CLOUD=nextcloud CORE_BRANCH=stable29
+    - php: 8.4
+      env: CLOUD=nextcloud CORE_BRANCH=stable30
+  allow_failures:
+    - php: 8.4
+    - env: CLOUD=nextcloud CORE_BRANCH=master
+
+before_install:
+  - if [ $CLOUD = 'nextcloud' ]; then wget -O before_install.sh https://raw.githubusercontent.com/gino0631/nextcloud-metadata/master/tests/travis_nextcloud_install.sh; fi
+  - . ./before_install.sh $APP_NAME $CORE_BRANCH pgsql
+
+before_script:
+  - cd apps/$APP_NAME/
+  - composer install --prefer-dist --no-interaction
+
+script:
+  # Run phpunit tests
+  - ./vendor/bin/phpunit --version
+  - ./vendor/bin/phpunit --configuration tests/phpunit.xml

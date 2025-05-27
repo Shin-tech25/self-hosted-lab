@@ -1,0 +1,12 @@
+{ "translations": {
+    "Location" : "Տեղակայություն",
+    "Title" : "Վերնագիր",
+    "Date" : "Date",
+    "Comment" : "Մեկնաբանել",
+    "Description" : "Նկարագրություն",
+    "Credits" : "անվանացանկ",
+    "Modified" : "Փոփոխված",
+    "Unknown" : "Անհայտ",
+    "Other" : "Այլ"
+},"pluralForm" :"nplurals=2; plural=(n != 1);"
+}
