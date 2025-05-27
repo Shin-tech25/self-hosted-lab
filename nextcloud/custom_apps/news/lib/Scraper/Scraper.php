@@ -1,0 +1,111 @@
+<?php
+/**
+ * Nextcloud - News
+ *
+ * This file is licensed under the Affero General Public License version 3 or
+ * later. See the COPYING file.
+ *
+ * @author Gioele Falcetti <thegio.f@gmail.com>
+ * @copyright 2019 Gioele Falcetti
+ */
+
+namespace OCA\News\Scraper;
+
+use fivefilters\Readability\Readability;
+use fivefilters\Readability\Configuration;
+use fivefilters\Readability\ParseException;
+use League\Uri\Exceptions\SyntaxError;
+use Psr\Log\LoggerInterface;
+use OCA\News\Config\FetcherConfig;
+
+class Scraper implements IScraper
+{
+    private $logger;
+    private $config;
+    private $readability;
+    private $curl_opts;
+
+    public function __construct(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+        $this->config = new Configuration([
+            'FixRelativeURLs' => true,
+            'SummonCthulhu' => true, // Remove <script>
+        ]);
+        $this->readability = null;
+
+        $this->curl_opts = array(
+            CURLOPT_RETURNTRANSFER => true,     // return web page
+            CURLOPT_HEADER         => false,    // do not return headers
+            CURLOPT_FOLLOWLOCATION => true,     // follow redirects
+            CURLOPT_USERAGENT      => FetcherConfig::DEFAULT_USER_AGENT, // who am i
+            CURLOPT_AUTOREFERER    => true,     // set referer on redirect
+            CURLOPT_CONNECTTIMEOUT => 120,      // timeout on connect
+            CURLOPT_TIMEOUT        => 120,      // timeout on response
+            CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
+        );
+    }
+
+    private function getHTTPContent(string $url): array
+    {
+        $handler = curl_init($url);
+        curl_setopt_array($handler, $this->curl_opts);
+        $content = curl_exec($handler);
+        $header  = curl_getinfo($handler);
+        curl_close($handler);
+
+        // Update the url after the redirects has been followed
+        $url = $header['url'];
+        return array($content, $header['url']);
+    }
+
+    public function scrape(string $url): bool
+    {
+        list($content, $redirected_url) = $this->getHTTPContent($url);
+        if ($content === false) {
+            $this->logger->error('Unable to receive content from {url}', [
+                 'url' => $url,
+            ]);
+            $this->readability = null;
+            return false;
+        }
+
+        // Update URL used to convert relative URLs
+        $this->config->setOriginalURL($redirected_url);
+        $this->readability = new Readability($this->config);
+
+        try {
+            $this->readability->parse($content);
+        } catch (ParseException | SyntaxError $e) {
+            $this->logger->error('Unable to parse content from {url}', [
+                 'url' => $url,
+            ]);
+            $this->logger->debug('Error during parsing of {url} ran into {error}', [
+                'url' => $url,
+                'error' => $e,
+            ]);
+        }
+        return true;
+    }
+
+    public function getContent(): ?string
+    {
+        if ($this->readability === null) {
+            return null;
+        }
+        return $this->readability->getContent();
+    }
+
+    public function getRTL(bool $default = false): bool
+    {
+        if ($this->readability === null) {
+            return $default;
+        }
+
+        $RTL = $this->readability->getDirection();
+        if ($RTL === null) {
+            return $default;
+        }
+        return $RTL === "rtl";
+    }
+}
