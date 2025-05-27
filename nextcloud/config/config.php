@@ -9,6 +9,7 @@ $CONFIG = array (
     'port' => getenv('REDIS_PORT'),
     'password' => '',
   ),
+  'backgroundjobs_mode' => 'cron',
   'apps_paths' => 
   array (
     0 => 
