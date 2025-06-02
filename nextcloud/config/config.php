@@ -35,7 +35,7 @@ $CONFIG = array (
   ),
   'datadirectory' => '/var/www/html/data',
   'dbtype' => 'mysql',
-  'version' => '31.0.1.2',
+  'version' => '31.0.5.1',
   'overwrite.cli.url' => getenv('NEXTCLOUD_OVERWRITE_CLI_URL'),
   'overwritehost' => getenv('NEXTCLOUD_TRUSTED_DOMAINS'),
   'overwriteprotocol' => 'https',
