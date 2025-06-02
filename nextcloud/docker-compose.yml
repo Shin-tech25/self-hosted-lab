@@ -69,7 +69,7 @@ services:
     volumes:
       - nextcloud_data:/var/www/html/data
       - ./config:/var/www/html/config:z
-      - nextcloud_apps:/var/www/html/custom_apps
+      - ./custom_apps:/var/www/html/custom_apps:z
     networks:
       - shared_network
 
@@ -90,7 +90,6 @@ services:
 volumes:
   nextcloud_db_data:
   nextcloud_data:
-  nextcloud_apps:
   onlyoffice_log:
 
 networks:
