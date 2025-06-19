@@ -1,0 +1,18 @@
+<?php
+
+namespace OCA\Recognize\Vendor\Wamania\Snowball\Tests;
+
+use OCA\Recognize\Vendor\PHPUnit\Framework\TestCase;
+use OCA\Recognize\Vendor\Wamania\Snowball\StemmerFactory;
+/** @internal */
+class FactoryTest extends TestCase
+{
+    public function testFactory()
+    {
+        $isoCodes = ['ca' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Catalan', 'cat' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Catalan', 'catalan' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Catalan', 'da' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Danish', 'dan' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Danish', 'danish' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Danish', 'nl' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Dutch', 'dut' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Dutch', 'nld' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Dutch', 'dutch' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Dutch', 'en' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\English', 'eng' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\English', 'english' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\English', 'fr' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\French', 'fre' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\French', 'fra' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\French', 'french' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\French', 'de' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\German', 'deu' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\German', 'ger' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\German', 'german' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\German', 'it' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Italian', 'ita' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Italian', 'italian' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Italian', 'no' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Norwegian', 'nor' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Norwegian', 'norwegian' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Norwegian', 'pt' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Portuguese', 'por' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Portuguese', 'portuguese' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Portuguese', 'ro' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Romanian', 'rum' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Romanian', 'ron' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Romanian', 'romanian' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Romanian', 'ru' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Russian', 'rus' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Russian', 'russian' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Russian', 'es' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Spanish', 'spa' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Spanish', 'spanish' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Spanish', 'sv' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Swedish', 'swe' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Swedish', 'swedish' => 'OCA\\Recognize\\Vendor\\Wamania\\Snowball\\Stemmer\\Swedish'];
+        foreach ($isoCodes as $isoCode => $classname) {
+            $stemmer = StemmerFactory::create($isoCode);
+            $this->assertTrue($stemmer instanceof $classname);
+        }
+    }
+}

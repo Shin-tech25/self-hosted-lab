@@ -1,0 +1,26 @@
+OC.L10N.register(
+    "recognize",
+    {
+    "Status" : "Stato",
+    "Reset" : "Restarigi",
+    "Failed to load settings" : "Ŝargo de agordoj malsukcesis",
+    "Failed to save settings" : "Konservo de agordoj malsukcesis",
+    "never" : "neniam",
+    "{time} ago" : "antaŭ {time}",
+    "People" : "Homoj",
+    "Dog" : "Hundo",
+    "Music" : "Muziko",
+    "Office" : "Oficejo",
+    "Train" : "Trajno",
+    "Car" : "Aŭto",
+    "Clock" : "Horloĝo",
+    "Display" : "Montrilo",
+    "Camping" : "Tendumas",
+    "Camera" : "Fotilo",
+    "Theater" : "Teatro",
+    "Info" : "Info",
+    "Bucket" : "Ujo (angle „bucket“)",
+    "Festival" : "Festo",
+    "Gallery" : "Bildaro"
+},
+"nplurals=2; plural=(n != 1);");
