@@ -1,0 +1,410 @@
+.icon-pin {
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZlcnNpb249IjEuMSIgdmlld2JveD0iMCAwIDE2IDE2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Im0xMS41NzEgMi40djQuOWwxLjQyODYgMi4xdjEuNGgtNC4yODU3djMuNWwtMC43MTQyOSAwLjctMC43MTQyOS0wLjd2LTMuNWgtNC4yODU3di0xLjRsMS40Mjg2LTIuMXYtNC45YzAtMC43NyAwLjY0Mjg2LTEuNCAxLjQyODYtMS40aDQuMjg1N2MwLjc5Mjg2IDAgMS40Mjg2IDAuNjIzIDEuNDI4NiAxLjR6bS01LjcxNDMgMHY1LjQyNWwtMS4wNzE0IDEuNTc1aDYuNDI4NmwtMS4wNzE0LTEuNTc1di01LjQyNXoiIHN0cm9rZS13aWR0aD0iLjcwNzExIi8+PC9zdmc+Cg==")
+}
+
+.icon-pinned {
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZlcnNpb249IjEuMSIgdmlld2JveD0iMCAwIDE2IDE2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Im0xMS41NzIgMi40YTEuNDI4NiAxLjQgMCAwIDAtMS40Mjg2LTEuNGgtNC4yODU3Yy0wLjc4NTcxIDAtMS40Mjg2IDAuNjMtMS40Mjg2IDEuNHY0LjlsLTEuNDI4NiAyLjF2MS40aDQuMjg1N3YzLjVsMC43MTQyOSAwLjcgMC43MTQyOS0wLjd2LTMuNWg0LjI4NTd2LTEuNGwtMS40Mjg2LTIuMXoiIHN0cm9rZS13aWR0aD0iLjcwNzExIi8+PC9zdmc+Cg==")
+}
+
+#app-content-wrapper {
+    height: 100%;
+}
+
+#new-note {
+    background-color: var(--color-primary-element);
+    color: var(--color-primary-element-text);
+    width: 100%;
+    min-height: 44px;
+    text-align: left;
+    margin: 0;
+    padding-left: 44px;
+    background-position: 16px center;
+}
+
+#new-note-fixed {
+    z-index: 111; /* navigation menu is 110 ;-) */
+    line-height: 44px;
+    min-height: 44px;
+    margin-bottom: 4px;
+    position: relative;
+}
+
+#app-navigation:not(.vue) > ul > li > ul > .color-filter {
+    display: flex;
+    min-height: 44px;
+    justify-content: center;
+    padding-top: 4px;
+    padding-left: unset;
+}
+
+.icon-filter-checkmark {
+    background-image: var(--original-icon-checkmark-dark);
+}
+
+.color-filter > .any-color-filter {
+    background-color: var(--color-primary-element-text);
+}
+
+.quicknote {
+    color: #202124;
+    min-height: 150px;
+    width: 250px;
+    border-radius: 8px;
+}
+
+.quicknote:hover {
+    box-shadow: 0px 0px 4px #808080;
+}
+
+#title-editable:empty:before {
+    content: attr(data-placeholder);
+}
+
+.quicknote ul {
+    list-style: initial;
+    margin-left: 20px;
+}
+
+.quicknote ol {
+    margin-left: 20px;
+}
+
+.quicknote blockquote {
+    margin: 0px 0px 0px 10px;
+    border-left: 1px dotted;
+    padding-left: 1ex;
+}
+
+.quicknote a {
+    color: #15c;
+}
+
+.note-active {
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+}
+
+.save-button #unshare-button {
+    display: none;
+}
+
+#div-content .buttons-toolbar {
+    float: right;
+    display: flex;
+    /*padding-right: 8px;*/
+    /*padding-bottom: 5px;*/
+}
+
+#div-content textarea {
+    border: 0;
+    overflow-y: auto;
+    /*resize: none;*/
+    background: inherit;
+}
+
+/* Grid Note */
+
+#div-content {
+    width: 100%;
+}
+
+#div-content .note-title {
+   font-size: 18px;
+   font-weight: bold;
+   overflow-wrap: break-word;
+}
+
+.note-content {
+    margin: 4px;
+    overflow-wrap: break-word;
+    min-height: 75px;
+}
+
+.icon-button-add {
+    background-image: var(--original-icon-add-white);
+}
+
+.icon-delete-note {
+    background-image: var(--original-icon-delete-dark);
+}
+
+.icon-delete-note:hover {
+    background-image: var(--icon-delete-color-red);
+}
+
+.icon-header-note {
+    cursor: pointer;
+    float: right;
+    margin-left: 2px;
+    padding: 12px;
+    background-color: rgba(0,0,0,0.08);
+    background-size: 22px;
+    min-width: 28px;
+    min-height: 28px;
+    border-radius: 50%;
+    -moz-transition: opacity 0.218s ease-in;
+    transition: opacity 0.218s ease-in;
+}
+
+.icon-header-note:hover {
+    background-color: rgba(0,0,0,0.12);
+    opacity: 0.87;
+}
+
+.hide-header-icon {
+    opacity: 0;
+}
+
+.fixed-header-icon,
+.show-header-icon {
+    opacity: 0.54;
+}
+
+.noselect {
+   -webkit-touch-callout: none; /* iOS Safari */
+   -webkit-user-select: none;   /* Chrome/Safari/Opera */
+   -khtml-user-select: none;    /* Konqueror */
+   -moz-user-select: none;      /* Firefox */
+   -ms-user-select: none;       /* Internet Explorer/Edge */
+   user-select: none;           /* Non-prefixed version, currently
+                                  not supported by any browser */
+}
+
+.colors-toolbar {
+   float: left;
+}
+
+Button.circle-toolbar {
+  padding: 14px;
+  min-height: 20px;
+}
+
+.colorPickButton,
+.circle-toolbar {
+   display:inline-block;
+   width:20px;
+   height:20px;
+   min-width: 20px;
+   min-height: 20px;
+   padding: unset;
+   border-radius:10px;
+   border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.circle-toolbar:hover {
+   border-color: var(--color-primary-element);
+}
+
+/* Isotope Grid */
+
+.notes-grid {
+    margin: 0 auto;
+    padding: 15px;
+}
+
+.note-grid-item {
+  margin-bottom: 14px;
+}
+
+/* Modal Note */
+
+/* The Modal (background) */
+
+.modal-note-background {
+    position: fixed; /* Stay in place */
+    z-index: 1051; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.hide-modal-note {
+    display: none;
+}
+
+.show-modal-note {
+    display: block;
+}
+
+div[contenteditable="true"] {
+   margin: 0px;
+   padding: 0px;
+   min-height: auto;
+}
+
+#title-editable:active, #title-editable:hover, #title-editable:focus,
+#content-editable:active, #content-editable:hover, #content-editable:focus {
+    background-color: transparent !important;
+    box-shadow: none;
+}
+
+#content-editable {
+    width: 100%;
+    padding: 4px;
+    min-height: 50px;
+    word-wrap: break-word;
+    background: none;
+    color: unset;
+    border: none;
+}
+
+#title-editable {
+    width: 100%;
+    background: none;
+    color: unset;
+    border: none;
+}
+
+.note-editable-options,
+.note-noneditable-options {
+    padding: 8px;
+    padding-top: 0px;
+}
+
+#note-share-options {
+    display: none;
+    padding-bottom: 5px;
+}
+
+.selected-share:hover, .unselected-share:hover, .selected-share span:hover, .unselected-share span:hover {
+    cursor: pointer;
+}
+
+.selected-share, .unselected-share {
+    padding-left: 5px;
+}
+
+.note-share-select {
+    width: 100%;
+    opacity: 0.5;
+}
+
+.slim-share,
+.slim-tag {
+    background-repeat: no-repeat;
+    display: inline-block;
+    cursor: pointer;
+    padding: 0px 6px 0 24px;
+    background-color: rgba(0,0,0,0.08);
+    background-position: 8px center;
+    opacity: 0.87;
+    border-radius: 10px;
+    font-size: 90%;
+}
+
+.slim-share:hover,
+.slim-tag:hover {
+    background-color: rgba(0,0,0,0.12);
+}
+
+.note-shares > .slim-share,
+.note-tags > .slim-tag {
+    margin-top: 5px;
+}
+
+.slim-share {
+    background-image: var(--original-icon-user-dark);
+}
+
+.slim-tag {
+    background-image: var(--original-icon-tag-dark);
+}
+
+/* Restore defaults select2 rules */
+
+#select2-drop {
+    z-index: 100001;
+}
+
+.select2-container {
+    width: 100%;
+}
+
+.select2-search-choice {
+    padding-right: 18px !important;
+}
+
+.select2-search-choice-close {
+    display: block !important;
+    right: 3px !important;
+    left: unset !important;
+    top: 8px !important;
+}
+
+.select2-container-multi .select2-choices .select2-search-choice {
+    padding: 3px 18px 3px 18px;
+}
+
+.select2-input {
+    margin-top: 4px !important;
+}
+
+div.select2-container-multi .select2-choices, div.select2-container-multi.select2-container-active .select2-choices {
+    min-height: 26px;
+}
+
+
+/* Modal Content */
+
+.modal-content {
+    position: relative;
+    margin: auto;
+    width: 60%;
+    height: auto;
+    min-height: unset;
+}
+
+.note-attachts {
+    position: relative;
+}
+
+.note-attach-grid {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    height: 100%;
+    width: 100%;
+}
+
+.note-attach {
+    background-size: contain;
+    width: 100%;
+    height: 100%;
+}
+
+.attach-preview {
+    background-color: rgba(210, 210, 210, .5);
+}
+
+.attach-remove {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    padding: 12px;
+    background-color: rgba(210, 210, 210, .4);
+    opacity: 0.54;
+    border-radius: 50%;
+}
+
+.attach-remove:hover {
+    cursor: pointer;
+    background-color: rgba(210, 210, 210, .5);
+    opacity: 0.87;
+}
+
+.note-body {
+    padding: 10px;
+}
+
+.round-tool-button {
+    width: 32px !important;
+    height: 32px;
+    padding: 0px !important;
+    border-radius: 50%;
+}
