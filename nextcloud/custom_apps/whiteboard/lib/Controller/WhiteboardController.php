@@ -24,6 +24,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\IRequest;
+use Psr\Log\LoggerInterface;
 
 /**
  * @psalm-suppress UndefinedClass
@@ -39,6 +40,7 @@ final class WhiteboardController extends ApiController {
 		private WhiteboardContentService $contentService,
 		private ExceptionService $exceptionService,
 		private ConfigService $configService,
+		private LoggerInterface $logger,
 	) {
 		parent::__construct($appName, $request);
 	}
@@ -49,13 +51,9 @@ final class WhiteboardController extends ApiController {
 	public function show(int $fileId): DataResponse {
 		try {
 			$jwt = $this->getJwtFromRequest();
-
 			$userId = $this->jwtService->getUserIdFromJWT($jwt);
-
 			$user = $this->getUserFromIdServiceFactory->create($userId)->getUser();
-
 			$file = $this->getFileServiceFactory->create($user, $fileId)->getFile();
-
 			$data = $this->contentService->getContent($file);
 
 			return new DataResponse(['data' => $data]);
@@ -69,18 +67,17 @@ final class WhiteboardController extends ApiController {
 	#[PublicPage]
 	public function update(int $fileId, array $data): DataResponse {
 		try {
-			$this->validateBackendSharedToken($fileId);
-
-			$userId = $this->getUserIdFromRequest();
-
+			$jwt = $this->getJwtFromRequest();
+			$userId = $this->jwtService->getUserIdFromJWT($jwt);
 			$user = $this->getUserFromIdServiceFactory->create($userId)->getUser();
-
 			$file = $this->getFileServiceFactory->create($user, $fileId)->getFile();
 
 			$this->contentService->updateContent($file, $data);
 
 			return new DataResponse(['status' => 'success']);
 		} catch (Exception $e) {
+			$this->logger->error('Error syncing whiteboard data: ' . $e->getMessage());
+
 			return $this->exceptionService->handleException($e);
 		}
 	}
@@ -88,6 +85,7 @@ final class WhiteboardController extends ApiController {
 	private function getJwtFromRequest(): string {
 		$authHeader = $this->request->getHeader('Authorization');
 		if (sscanf($authHeader, 'Bearer %s', $jwt) !== 1) {
+			$this->logger->error('Invalid JWT format in Authorization header');
 			throw new UnauthorizedException();
 		}
 		return (string)$jwt;
@@ -100,6 +98,10 @@ final class WhiteboardController extends ApiController {
 	private function validateBackendSharedToken(int $fileId): void {
 		$backendSharedToken = $this->request->getHeader('X-Whiteboard-Auth');
 		if (!$backendSharedToken || !$this->verifySharedToken($backendSharedToken, $fileId)) {
+			$this->logger->error('Invalid backend shared token', [
+				'file_id' => $fileId,
+				'token_present' => !empty($backendSharedToken)
+			]);
 			throw new InvalidUserException('Invalid backend shared token');
 		}
 	}

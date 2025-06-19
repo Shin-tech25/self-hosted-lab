@@ -16,6 +16,7 @@ use OCA\Whiteboard\Listener\AddContentSecurityPolicyListener;
 use OCA\Whiteboard\Listener\BeforeTemplateRenderedListener;
 use OCA\Whiteboard\Listener\LoadViewerListener;
 use OCA\Whiteboard\Listener\RegisterTemplateCreatorListener;
+use OCA\Whiteboard\Settings\SetupCheck;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
@@ -37,6 +38,7 @@ class Application extends App implements IBootstrap {
 		parent::__construct(self::APP_ID, $params);
 	}
 
+	#[\Override]
 	public function register(IRegistrationContext $context): void {
 		include_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -44,12 +46,14 @@ class Application extends App implements IBootstrap {
 		$context->registerEventListener(LoadViewer::class, LoadViewerListener::class);
 		$context->registerEventListener(RegisterTemplateCreatorEvent::class, RegisterTemplateCreatorListener::class);
 		$context->registerEventListener(BeforeTemplateRenderedEvent::class, BeforeTemplateRenderedListener::class);
+		$context->registerSetupCheck(SetupCheck::class);
 	}
 
+	#[\Override]
 	public function boot(IBootContext $context): void {
 		[$major] = Util::getVersion();
 		if ($major < 30) {
-			$context->injectFn(function (ITemplateManager $templateManager, IL10N $l10n) use ($major) {
+			$context->injectFn(function (ITemplateManager $templateManager, IL10N $l10n) {
 				$templateManager->registerTemplateFileCreator(function () use ($l10n) {
 					return RegisterTemplateCreatorListener::getTemplateFileCreator($l10n);
 				});

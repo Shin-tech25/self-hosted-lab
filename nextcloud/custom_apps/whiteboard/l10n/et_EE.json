@@ -1,4 +1,7 @@
 { "translations": {
-    "Save settings" : "Salvesta seaded"
+    "Whiteboard" : "Valgetahvel",
+    "Shared secret" : "Jagatud saladus",
+    "Save settings" : "Salvesta seaded",
+    "Advanced settings" : "Lisavalikud"
 },"pluralForm" :"nplurals=2; plural=(n != 1);"
 }
