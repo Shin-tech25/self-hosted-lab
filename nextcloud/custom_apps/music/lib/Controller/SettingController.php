@@ -9,7 +9,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
  * @copyright Morris Jobke 2013, 2014
- * @copyright Pauli Järvinen 2017 - 2024
+ * @copyright Pauli Järvinen 2017 - 2025
  */
 
 namespace OCA\Music\Controller;
@@ -25,10 +25,10 @@ use OCA\Music\AppFramework\Core\Logger;
 use OCA\Music\Db\AmpacheSessionMapper;
 use OCA\Music\Db\AmpacheUserMapper;
 use OCA\Music\Http\ErrorResponse;
+use OCA\Music\Service\LibrarySettings;
+use OCA\Music\Service\Scanner;
 use OCA\Music\Utility\AppInfo;
-use OCA\Music\Utility\LibrarySettings;
-use OCA\Music\Utility\Scanner;
-use OCA\Music\Utility\Util;
+use OCA\Music\Utility\StringUtil;
 
 class SettingController extends Controller {
 	const DEFAULT_PASSWORD_LENGTH = 10;
@@ -149,7 +149,7 @@ class SettingController extends Controller {
 
 	private function storeUserKey($description, $password) {
 		$hash = \hash('sha256', $password);
-		$description = Util::truncate($description, 64); // some DB setups can't truncate automatically to column max size
+		$description = StringUtil::truncate($description, 64); // some DB setups can't truncate automatically to column max size
 		return $this->ampacheUserMapper->addUserKey($this->userId, $hash, $description);
 	}
 

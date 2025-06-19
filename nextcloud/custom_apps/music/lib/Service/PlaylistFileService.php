@@ -7,18 +7,21 @@
  * later. See the COPYING file.
  *
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
- * @copyright Pauli Järvinen 2020 - 2024
+ * @copyright Pauli Järvinen 2020 - 2025
  */
 
-namespace OCA\Music\Utility;
+namespace OCA\Music\Service;
 
 use OCA\Music\AppFramework\BusinessLayer\BusinessLayerException;
 use OCA\Music\AppFramework\Core\Logger;
+use OCA\Music\AppFramework\Utility\FileExistsException;
 use OCA\Music\BusinessLayer\PlaylistBusinessLayer;
 use OCA\Music\BusinessLayer\RadioStationBusinessLayer;
 use OCA\Music\BusinessLayer\TrackBusinessLayer;
 use OCA\Music\Db\SortBy;
 use OCA\Music\Db\Track;
+use OCA\Music\Utility\FilesUtil;
+use OCA\Music\Utility\StringUtil;
 
 use OCP\Files\File;
 use OCP\Files\Folder;
@@ -57,6 +60,7 @@ class PlaylistFileService {
 	 * @param string $userId owner of the playlist
 	 * @param Folder $userFolder home dir of the user
 	 * @param string $folderPath target parent folder path
+	 * @param ?string $filename target file name, omit to use the list name
 	 * @param string $collisionMode action to take on file name collision,
 	 *								supported values:
 	 *								- 'overwrite' The existing file will be overwritten
@@ -65,24 +69,19 @@ class PlaylistFileService {
 	 * @return string path of the written file
 	 * @throws BusinessLayerException if playlist with ID not found
 	 * @throws \OCP\Files\NotFoundException if the $folderPath is not a valid folder
-	 * @throws \RuntimeException on name conflict if $collisionMode == 'abort'
+	 * @throws FileExistsException on name conflict if $collisionMode == 'abort'
 	 * @throws \OCP\Files\NotPermittedException if the user is not allowed to write to the given folder
 	 */
 	public function exportToFile(
-			int $id, string $userId, Folder $userFolder, string $folderPath, string $collisionMode='abort') : string {
+			int $id, string $userId, Folder $userFolder, string $folderPath, ?string $filename=null, string $collisionMode='abort') : string {
 		$playlist = $this->playlistBusinessLayer->find($id, $userId);
 		$tracks = $this->playlistBusinessLayer->getPlaylistTracks($id, $userId);
-		$targetFolder = Util::getFolderFromRelativePath($userFolder, $folderPath);
+		$targetFolder = FilesUtil::getFolderFromRelativePath($userFolder, $folderPath);
 
-		// Name the file according the playlist. File names cannot contain the '/' character on Linux, and in
-		// owncloud/Nextcloud, the whole name must fit 250 characters, including the file extension. Reserve
-		// another 5 characters to fit the postfix like " (xx)" on name collisions. If there are more than 100
-		// exports of the same playlist with overly long name, then this function will fail but we can live
-		// with that :).
-		$filename = \str_replace('/', '-', $playlist->getName());
-		$filename = Util::truncate($filename, 250 - 5 - 5);
-		$filename .= '.m3u8';
-		$filename = self::checkFileNameConflict($targetFolder, $filename, $collisionMode);
+		$filename = $filename ?: $playlist->getName();
+		$filename = FilesUtil::sanitizeFileName($filename, ['m3u8', 'm3u']);
+
+		$file = FilesUtil::createFile($targetFolder, $filename, $collisionMode);
 
 		$content = "#EXTM3U\n#EXTENC: UTF-8\n";
 		foreach ($tracks as $track) {
@@ -90,10 +89,9 @@ class PlaylistFileService {
 			if (\count($nodes) > 0) {
 				$caption = self::captionForTrack($track);
 				$content .= "#EXTINF:{$track->getLength()},$caption\n";
-				$content .= Util::relativePath($targetFolder->getPath(), $nodes[0]->getPath()) . "\n";
+				$content .= FilesUtil::relativePath($targetFolder->getPath(), $nodes[0]->getPath()) . "\n";
 			}
 		}
-		$file = $targetFolder->newFile($filename);
 		$file->putContent($content);
 
 		return $userFolder->getRelativePath($file->getPath());
@@ -112,14 +110,16 @@ class PlaylistFileService {
 	 *								- 'abort' (default) The operation will fail
 	 * @return string path of the written file
 	 * @throws \OCP\Files\NotFoundException if the $folderPath is not a valid folder
-	 * @throws \RuntimeException on name conflict if $collisionMode == 'abort'
+	 * @throws FileExistsException on name conflict if $collisionMode == 'abort'
 	 * @throws \OCP\Files\NotPermittedException if the user is not allowed to write to the given folder
 	 */
 	public function exportRadioStationsToFile(
 			string $userId, Folder $userFolder, string $folderPath, string $filename, string $collisionMode='abort') : string {
-		$targetFolder = Util::getFolderFromRelativePath($userFolder, $folderPath);
+		$targetFolder = FilesUtil::getFolderFromRelativePath($userFolder, $folderPath);
 
-		$filename = self::checkFileNameConflict($targetFolder, $filename, $collisionMode);
+		$filename = FilesUtil::sanitizeFileName($filename, ['m3u8', 'm3u']);
+
+		$file = FilesUtil::createFile($targetFolder, $filename, $collisionMode);
 
 		$stations = $this->radioStationBusinessLayer->findAll($userId, SortBy::Name);
 
@@ -128,7 +128,6 @@ class PlaylistFileService {
 			$content .= "#EXTINF:1,{$station->getName()}\n";
 			$content .= $station->getStreamUrl() . "\n";
 		}
-		$file = $targetFolder->newFile($filename);
 		$file->putContent($content);
 
 		return $userFolder->getRelativePath($file->getPath());
@@ -141,7 +140,7 @@ class PlaylistFileService {
 	 * @param Folder $userFolder user home dir
 	 * @param string $filePath path of the file to import
 	 * @parma string $mode one of the following:
-	 * 						- 'append' (dafault) Append the imported tracks after the existing tracks on the list
+	 * 						- 'append' (default) Append the imported tracks after the existing tracks on the list
 	 * 						- 'overwrite' Replace any previous tracks on the list with the imported tracks
 	 * @return array with three keys:
 	 * 			- 'playlist': The Playlist entity after the modification
@@ -254,6 +253,8 @@ class PlaylistFileService {
 			$entries = self::parseM3uFile($file);
 		} elseif ($mime == 'audio/x-scpls') {
 			$entries = self::parsePlsFile($file);
+		} elseif ($mime == 'application/vnd.ms-wpl') {
+			$entries = self::parseWplFile($file);
 		} else {
 			throw new \UnexpectedValueException("file mime type '$mime' is not supported");
 		}
@@ -266,7 +267,7 @@ class PlaylistFileService {
 		foreach ($entries as $entry) {
 			$path = $entry['path'];
 
-			if (Util::startsWith($path, 'http', /*ignoreCase=*/true)) {
+			if (StringUtil::startsWith($path, 'http', /*ignoreCase=*/true)) {
 				if ($mode !== self::PARSE_LOCAL_FILES_ONLY) {
 					$trackFiles[] = [
 						'url' => $path,
@@ -305,7 +306,7 @@ class PlaylistFileService {
 		 * otherwise they are treated as ISO-8859-1 which was the original encoding used when that file
 		 * type was introduced. There's no any kind of official standard to follow here.
 		 */
-		if (Util::endsWith($file->getPath(), '.m3u8', /*ignoreCase=*/true)) {
+		if (StringUtil::endsWith($file->getPath(), '.m3u8', /*ignoreCase=*/true)) {
 			$fp = $file->fopen('r');
 			$entries = self::parseM3uFilePointer($fp, 'UTF-8');
 			\fclose($fp);
@@ -343,7 +344,7 @@ class PlaylistFileService {
 
 			if ($line === '') {
 				// empty line => skip
-			} elseif (Util::startsWith($line, '#')) {
+			} elseif (StringUtil::startsWith($line, '#')) {
 				// comment or extended format attribute line
 				if ($value = self::extractExtM3uField($line, 'EXTENC')) {
 					// update the used encoding with the explicitly defined one
@@ -400,10 +401,10 @@ class PlaylistFileService {
 				$key = \trim($key);
 				$value = \trim($value);
 				// we are interested only on the File# and Title# lines
-				if (Util::startsWith($key, 'File')) {
+				if (StringUtil::startsWith($key, 'File')) {
 					$idx = \substr($key, \strlen('File'));
 					$files[$idx] = $value;
-				} elseif (Util::startsWith($key, 'Title')) {
+				} elseif (StringUtil::startsWith($key, 'Title')) {
 					$idx = \substr($key, \strlen('Title'));
 					$titles[$idx] = $value;
 				}
@@ -422,20 +423,26 @@ class PlaylistFileService {
 		return $entries;
 	}
 
-	private static function checkFileNameConflict(Folder $targetFolder, string $filename, string $collisionMode) : string {
-		if ($targetFolder->nodeExists($filename)) {
-			switch ($collisionMode) {
-				case 'overwrite':
-					$targetFolder->get($filename)->delete();
-					break;
-				case 'keepboth':
-					$filename = $targetFolder->getNonExistingName($filename);
-					break;
-				default:
-					throw new \RuntimeException('file already exists');
-			}
+	public static function parseWplFile(File $file) : array {
+		$entries = [];
+
+		$rootNode = \simplexml_load_string($file->getContent(), \SimpleXMLElement::class, LIBXML_NOCDATA);
+		if ($rootNode === false) {
+			throw new \UnexpectedValueException('the file is not in valid WPL format');
 		}
-		return $filename;
+
+		$mediaNodes = $rootNode->xpath('body/seq/media');
+
+		foreach ($mediaNodes as $node) {
+			$path = (string)$node->attributes()['src'];
+			$path = \str_replace('\\', '/', $path); // WPL is a Windows format and uses backslashes as directory separators
+			$entries[] = [
+				'path' => $path,
+				'caption' => null
+			];
+		}
+
+		return $entries;
 	}
 
 	private static function captionForTrack(Track $track) : string {
@@ -446,7 +453,7 @@ class PlaylistFileService {
 	}
 
 	private static function extractExtM3uField($line, $field) : ?string {
-		if (Util::startsWith($line, "#$field:")) {
+		if (StringUtil::startsWith($line, "#$field:")) {
 			return \trim(\substr($line, \strlen("#$field:")));
 		} else {
 			return null;
@@ -454,7 +461,7 @@ class PlaylistFileService {
 	}
 
 	private static function findFile(Folder $baseFolder, string $cwd, string $path) : ?File {
-		$absPath = Util::resolveRelativePath($cwd, $path);
+		$absPath = FilesUtil::resolveRelativePath($cwd, $path);
 
 		try {
 			/** @throws \OCP\Files\NotFoundException | \OCP\Files\NotPermittedException */

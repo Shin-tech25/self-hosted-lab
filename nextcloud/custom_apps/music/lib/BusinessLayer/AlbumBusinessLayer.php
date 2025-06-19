@@ -9,7 +9,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
  * @copyright Morris Jobke 2013, 2014
- * @copyright Pauli Järvinen 2016 - 2024
+ * @copyright Pauli Järvinen 2016 - 2025
  */
 
 namespace OCA\Music\BusinessLayer;
@@ -24,8 +24,9 @@ use OCA\Music\Db\Entity;
 use OCA\Music\Db\MatchMode;
 use OCA\Music\Db\SortBy;
 use OCA\Music\Db\Track;
-
+use OCA\Music\Utility\ArrayUtil;
 use OCA\Music\Utility\Random;
+use OCA\Music\Utility\StringUtil;
 use OCA\Music\Utility\Util;
 
 /**
@@ -56,7 +57,7 @@ class AlbumBusinessLayer extends BusinessLayer {
 	 * @see BusinessLayer::findById()
 	 * @return Album[]
 	 */
-	public function findById(array $ids, string $userId=null, bool $preserveOrder=false) : array {
+	public function findById(array $ids, ?string $userId=null, bool $preserveOrder=false) : array {
 		$albums = parent::findById($ids, $userId, $preserveOrder);
 		if ($userId !== null) {
 			return $this->injectExtraFields($albums, $userId);
@@ -256,7 +257,7 @@ class AlbumBusinessLayer extends BusinessLayer {
 			// performance also on other DBMSs. For the proper operation of this function,
 			// it doesn't matter if we fetch data for some extra albums.
 			$albumIds = ($allAlbums || \count($albums) >= self::MAX_SQL_ARGS)
-					? null : Util::extractIds($albums);
+					? null : ArrayUtil::extractIds($albums);
 
 			$artists = $this->mapper->getPerformingArtistsByAlbumId($albumIds, $userId);
 			$years = $this->mapper->getYearsByAlbumId($albumIds, $userId);
@@ -311,7 +312,7 @@ class AlbumBusinessLayer extends BusinessLayer {
 	 */
 	public function addOrUpdateAlbum(?string $name, int $albumArtistId, string $userId) : Album {
 		$album = new Album();
-		$album->setName(Util::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
+		$album->setName(StringUtil::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
 		$album->setUserId($userId);
 		$album->setAlbumArtistId($albumArtistId);
 
@@ -360,7 +361,7 @@ class AlbumBusinessLayer extends BusinessLayer {
 	 * @param string[]|null $userIds the users whose music library is targeted; all users are targeted if omitted
 	 * @return Album[] albums which got modified, empty array if none
 	 */
-	public function removeCovers(array $coverFileIds, array $userIds=null) : array {
+	public function removeCovers(array $coverFileIds, ?array $userIds=null) : array {
 		return $this->mapper->removeCovers($coverFileIds, $userIds);
 	}
 
@@ -369,7 +370,7 @@ class AlbumBusinessLayer extends BusinessLayer {
 	 * @param string|null $userId target user; omit to target all users
 	 * @return string[] users whose collections got modified
 	 */
-	public function findCovers(string $userId = null) : array {
+	public function findCovers(?string $userId = null) : array {
 		$affectedUsers = [];
 		$albums = $this->mapper->getAlbumsWithoutCover($userId);
 		foreach ($albums as $album) {
@@ -425,7 +426,7 @@ class AlbumBusinessLayer extends BusinessLayer {
 		}
 
 		// create hash tables "id => entity" for the albums for fast access
-		$albumMap = Util::createIdLookupTable($albums);
+		$albumMap = ArrayUtil::createIdLookupTable($albums);
 
 		// finally, set the references on the tracks
 		foreach ($tracks as &$track) {

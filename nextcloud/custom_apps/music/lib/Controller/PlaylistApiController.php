@@ -25,6 +25,7 @@ use OCP\IURLGenerator;
 
 use OCA\Music\AppFramework\BusinessLayer\BusinessLayerException;
 use OCA\Music\AppFramework\Core\Logger;
+use OCA\Music\AppFramework\Utility\FileExistsException;
 use OCA\Music\BusinessLayer\AlbumBusinessLayer;
 use OCA\Music\BusinessLayer\ArtistBusinessLayer;
 use OCA\Music\BusinessLayer\GenreBusinessLayer;
@@ -33,8 +34,8 @@ use OCA\Music\BusinessLayer\TrackBusinessLayer;
 use OCA\Music\Db\Playlist;
 use OCA\Music\Http\ErrorResponse;
 use OCA\Music\Http\FileResponse;
-use OCA\Music\Utility\CoverHelper;
-use OCA\Music\Utility\PlaylistFileService;
+use OCA\Music\Service\CoverService;
+use OCA\Music\Service\PlaylistFileService;
 
 class PlaylistApiController extends Controller {
 	private IURLGenerator $urlGenerator;
@@ -43,7 +44,7 @@ class PlaylistApiController extends Controller {
 	private AlbumBusinessLayer $albumBusinessLayer;
 	private TrackBusinessLayer $trackBusinessLayer;
 	private GenreBusinessLayer $genreBusinessLayer;
-	private CoverHelper $coverHelper;
+	private CoverService $coverService;
 	private PlaylistFileService $playlistFileService;
 	private string $userId;
 	private Folder $userFolder;
@@ -58,7 +59,7 @@ class PlaylistApiController extends Controller {
 								AlbumBusinessLayer $albumBusinessLayer,
 								TrackBusinessLayer $trackBusinessLayer,
 								GenreBusinessLayer $genreBusinessLayer,
-								CoverHelper $coverHelper,
+								CoverService $coverService,
 								PlaylistFileService $playlistFileService,
 								string $userId,
 								Folder $userFolder,
@@ -71,7 +72,7 @@ class PlaylistApiController extends Controller {
 		$this->albumBusinessLayer = $albumBusinessLayer;
 		$this->trackBusinessLayer = $trackBusinessLayer;
 		$this->genreBusinessLayer = $genreBusinessLayer;
-		$this->coverHelper = $coverHelper;
+		$this->coverService = $coverService;
 		$this->playlistFileService = $playlistFileService;
 		$this->userId = $userId;
 		$this->userFolder = $userFolder;
@@ -230,7 +231,7 @@ class PlaylistApiController extends Controller {
 	public function getCover(int $id) {
 		try {
 			$playlist = $this->playlistBusinessLayer->find($id, $this->userId);
-			$cover = $this->coverHelper->getCover($playlist, $this->userId, $this->userFolder);
+			$cover = $this->coverService->getCover($playlist, $this->userId, $this->userFolder);
 
 			if ($cover !== null) {
 				return new FileResponse($cover);
@@ -307,6 +308,7 @@ class PlaylistApiController extends Controller {
 	 * export the playlist to a file
 	 * @param int $id playlist ID
 	 * @param string $path parent folder path
+	 * @param ?string $filename target file name, omit to use the playlist name
 	 * @param string $oncollision action to take on file name collision,
 	 *								supported values:
 	 *								- 'overwrite' The existing file will be overwritten
@@ -316,17 +318,17 @@ class PlaylistApiController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
-	public function exportToFile(int $id, string $path, string $oncollision) {
+	public function exportToFile(int $id, string $path, ?string $filename=null, string $oncollision='abort') {
 		try {
 			$exportedFilePath = $this->playlistFileService->exportToFile(
-					$id, $this->userId, $this->userFolder, $path, $oncollision);
+					$id, $this->userId, $this->userFolder, $path, $filename, $oncollision);
 			return new JSONResponse(['wrote_to_file' => $exportedFilePath]);
 		} catch (BusinessLayerException $ex) {
 			return new ErrorResponse(Http::STATUS_NOT_FOUND, 'playlist not found');
 		} catch (\OCP\Files\NotFoundException $ex) {
 			return new ErrorResponse(Http::STATUS_NOT_FOUND, 'folder not found');
-		} catch (\RuntimeException $ex) {
-			return new ErrorResponse(Http::STATUS_CONFLICT, $ex->getMessage());
+		} catch (FileExistsException $ex) {
+			return new ErrorResponse(Http::STATUS_CONFLICT, 'file already exists', ['path' => $ex->getPath(), 'suggested_name' => $ex->getAltName()]);
 		} catch (\OCP\Files\NotPermittedException $ex) {
 			return new ErrorResponse(Http::STATUS_FORBIDDEN, 'user is not allowed to write to the target file');
 		}

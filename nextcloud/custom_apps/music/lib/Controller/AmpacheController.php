@@ -66,15 +66,18 @@ use OCA\Music\Http\XmlResponse;
 
 use OCA\Music\Middleware\AmpacheException;
 
-use OCA\Music\Utility\AmpacheImageService;
-use OCA\Music\Utility\AmpachePreferences;
+use OCA\Music\Service\AmpacheImageService;
+use OCA\Music\Service\AmpachePreferences;
+use OCA\Music\Service\CoverService;
+use OCA\Music\Service\DetailsService;
+use OCA\Music\Service\LastfmService;
+use OCA\Music\Service\LibrarySettings;
+use OCA\Music\Service\PodcastService;
+
 use OCA\Music\Utility\AppInfo;
-use OCA\Music\Utility\CoverHelper;
-use OCA\Music\Utility\DetailsHelper;
-use OCA\Music\Utility\LastfmService;
-use OCA\Music\Utility\LibrarySettings;
-use OCA\Music\Utility\PodcastService;
+use OCA\Music\Utility\ArrayUtil;
 use OCA\Music\Utility\Random;
+use OCA\Music\Utility\StringUtil;
 use OCA\Music\Utility\Util;
 
 class AmpacheController extends ApiController {
@@ -94,8 +97,8 @@ class AmpacheController extends ApiController {
 	private Library $library;
 	private PodcastService $podcastService;
 	private AmpacheImageService $imageService;
-	private CoverHelper $coverHelper;
-	private DetailsHelper $detailsHelper;
+	private CoverService $coverService;
+	private DetailsService $detailsService;
 	private LastfmService $lastfmService;
 	private LibrarySettings $librarySettings;
 	private Random $random;
@@ -129,8 +132,8 @@ class AmpacheController extends ApiController {
 								Library $library,
 								PodcastService $podcastService,
 								AmpacheImageService $imageService,
-								CoverHelper $coverHelper,
-								DetailsHelper $detailsHelper,
+								CoverService $coverService,
+								DetailsService $detailsService,
 								LastfmService $lastfmService,
 								LibrarySettings $librarySettings,
 								Random $random,
@@ -153,8 +156,8 @@ class AmpacheController extends ApiController {
 		$this->library = $library;
 		$this->podcastService = $podcastService;
 		$this->imageService = $imageService;
-		$this->coverHelper = $coverHelper;
-		$this->detailsHelper = $detailsHelper;
+		$this->coverService = $coverService;
+		$this->detailsService = $detailsService;
 		$this->lastfmService = $lastfmService;
 		$this->librarySettings = $librarySettings;
 		$this->random = $random;
@@ -418,7 +421,7 @@ class AmpacheController extends ApiController {
 						$idsWithChildren[$playlist->getId()] = $playlist->getTrackIdsAsArray();
 					}
 				} else {
-					$idsWithChildren = $this->getBusinessLayer($childType)->findAllIdsByParentIds($userId, Util::extractIds($entities));
+					$idsWithChildren = $this->getBusinessLayer($childType)->findAllIdsByParentIds($userId, ArrayUtil::extractIds($entities));
 				}
 				return $this->renderIdsWithChildren($idsWithChildren, $type, $childType);
 			}
@@ -478,7 +481,7 @@ class AmpacheController extends ApiController {
 						throw new AmpacheException("Filter '$filter' is not a valid catalog", 400);
 				}
 			} else {
-				$catalogId = Util::startsWith($type, 'podcast') ? 'podcasts' : 'music';
+				$catalogId = StringUtil::startsWith($type, 'podcast') ? 'podcasts' : 'music';
 				$parentId = empty($filter) ? null : (int)$filter;
 
 				switch ($type) {
@@ -549,7 +552,7 @@ class AmpacheController extends ApiController {
 			case 'random':
 				$entities = $businessLayer->findAll($userId, SortBy::Name);
 				$indices = $this->random->getIndices(\count($entities), $offset, $limit, $userId, 'ampache_stats_'.$type);
-				$entities = Util::arrayMultiGet($entities, $indices);
+				$entities = ArrayUtil::multiGet($entities, $indices);
 				break;
 			case 'frequent':
 				$entities = $getEntitiesIfSupported($businessLayer, 'findFrequentPlay', $userId, $limit, $offset);
@@ -657,7 +660,7 @@ class AmpacheController extends ApiController {
 
 		// parse and include also lyrics when fetching an individual song
 		$rootFolder = $this->librarySettings->getFolder($userId);
-		$lyrics = $this->detailsHelper->getLyricsAsPlainText($track->getFileId(), $rootFolder);
+		$lyrics = $this->detailsService->getLyricsAsPlainText($track->getFileId(), $rootFolder);
 		if ($lyrics !== null) {
 			$lyrics = \mb_ereg_replace("\n", "<br />", $lyrics); // It's not documented but Ampache proper uses HTML line breaks for the lyrics
 			$track->setLyrics($lyrics);
@@ -729,7 +732,7 @@ class AmpacheController extends ApiController {
 		// disregard any (parent) folders without any direct track children
 		$folders = \array_filter($folders, fn($folder) => \count($folder['trackIds']) > 0);
 
-		Util::arraySortByColumn($folders, 'name');
+		ArrayUtil::sortByColumn($folders, 'name');
 		$folders = \array_slice($folders, $offset, $limit);
 
 		return [
@@ -856,7 +859,7 @@ class AmpacheController extends ApiController {
 
 		if ($random) {
 			$indices = $this->random->getIndices(\count($tracks), $rndOffset, $rndLimit, $userId, 'ampache_playlist_songs');
-			$tracks = Util::arrayMultiGet($tracks, $indices);
+			$tracks = ArrayUtil::multiGet($tracks, $indices);
 		}
 
 		return $this->renderSongs($tracks);
@@ -986,7 +989,7 @@ class AmpacheController extends ApiController {
 			if (!\in_array($song, $trackIds)) {
 				throw new AmpacheException("Song $song not found in playlist", 404);
 			}
-			$trackIds = Util::arrayDiff($trackIds, [$song]);
+			$trackIds = ArrayUtil::diff($trackIds, [$song]);
 			$message = 'song removed from playlist';
 		} elseif ($track !== null) {
 			$trackIds = $playlist->getTrackIdsAsArray();
@@ -1029,7 +1032,7 @@ class AmpacheController extends ApiController {
 		if ($mode == 'random') {
 			$userId = $this->userId();
 			$indices = $this->random->getIndices(\count($tracks), $offset, $limit, $userId, 'ampache_playlist_generate');
-			$tracks = Util::arrayMultiGet($tracks, $indices);
+			$tracks = ArrayUtil::multiGet($tracks, $indices);
 		} else { // 'recent', 'forgotten', 'unplayed'
 			throw new AmpacheException("Mode '$mode' is not supported", 400);
 		}
@@ -1705,9 +1708,9 @@ class AmpacheController extends ApiController {
 			case 'song':
 				return [$id];
 			case 'album':
-				return Util::extractIds($this->trackBusinessLayer->findAllByAlbum($id, $userId));
+				return ArrayUtil::extractIds($this->trackBusinessLayer->findAllByAlbum($id, $userId));
 			case 'artist':
-				return Util::extractIds($this->trackBusinessLayer->findAllByArtist($id, $userId));
+				return ArrayUtil::extractIds($this->trackBusinessLayer->findAllByArtist($id, $userId));
 			case 'playlist':
 				return $this->playlistBusinessLayer->find($id, $userId)->getTrackIdsAsArray();
 			default:
@@ -1890,7 +1893,7 @@ class AmpacheController extends ApiController {
 
 		try {
 			$entity = $businessLayer->find($entityId, $userId);
-			$coverData = $this->coverHelper->getCover($entity, $userId, $userFolder);
+			$coverData = $this->coverService->getCover($entity, $userId, $userFolder);
 			if ($coverData !== null) {
 				return new FileResponse($coverData);
 			}
@@ -1990,7 +1993,7 @@ class AmpacheController extends ApiController {
 	}
 
 	private function prefixAndBaseName(?string $name) : array {
-		return Util::splitPrefixAndBasename($name, $this->namePrefixes);
+		return StringUtil::splitPrefixAndBasename($name, $this->namePrefixes);
 	}
 
 	private function renderAlbumOrArtistRef(int $id, string $name) : array {
@@ -2012,7 +2015,7 @@ class AmpacheController extends ApiController {
 	 */
 	private function renderArtists(array $artists) : array {
 		$userId = $this->userId();
-		$genreMap = Util::createIdLookupTable($this->genreBusinessLayer->findAll($userId));
+		$genreMap = ArrayUtil::createIdLookupTable($this->genreBusinessLayer->findAll($userId));
 		$genreKey = $this->genreKey();
 		// In APIv3-4, the properties 'albums' and 'songs' were used for the album/song count in case the inclusion of the relevant
 		// child objects wasn't requested. APIv5+ has the dedicated properties 'albumcount' and 'songcount' for this purpose.
@@ -2166,7 +2169,7 @@ class AmpacheController extends ApiController {
 		// annoyingly, the structure of the included tracks is quite different in JSON compared to XML
 		if ($includeTracks && $this->jsonMode) {
 			foreach ($result['playlist'] as &$apiPlaylist) {
-				$apiPlaylist['items'] = Util::convertArrayKeys($apiPlaylist['items']['playlisttrack'], ['text' => 'playlisttrack']);
+				$apiPlaylist['items'] = ArrayUtil::convertKeys($apiPlaylist['items']['playlisttrack'], ['text' => 'playlisttrack']);
 			}
 		}
 
@@ -2343,7 +2346,7 @@ class AmpacheController extends ApiController {
 	 * @param Entity[] $entities
 	 */
 	private function renderEntityIds(array $entities, string $key = 'id') : array {
-		return [$key => Util::extractIds($entities)];
+		return [$key => ArrayUtil::extractIds($entities)];
 	}
 
 	/**
@@ -2418,7 +2421,7 @@ class AmpacheController extends ApiController {
 
 				// The actions "user_preference" and "system_preference" are another kind of outliers in APIv5,
 				// their responses are anonymous 1-item arrays. This got fixed in the APIv6.0.1
-				$api5preferenceOddity = ($apiVer === 5 && Util::endsWith($action, 'preference'));
+				$api5preferenceOddity = ($apiVer === 5 && StringUtil::endsWith($action, 'preference'));
 
 				// The action "get_bookmark" works as plural in case the argument all=1 is given
 				$allBookmarks = ($action === 'get_bookmark' && $this->request->getParam('all'));
@@ -2434,16 +2437,16 @@ class AmpacheController extends ApiController {
 
 		// In API versions < 6, all boolean valued properties should be converted to 0/1.
 		if ($apiVer < 6) {
-			Util::intCastArrayValues($content, 'is_bool');
+			ArrayUtil::intCastValues($content, 'is_bool');
 		}
 
 		// The key 'text' has a special meaning on XML responses, as it makes the corresponding value
 		// to be treated as text content of the parent element. In the JSON API, these are mostly
 		// substituted with property 'name', but error responses use the property 'message', instead.
 		if (\array_key_exists('error', $content)) {
-			$content = Util::convertArrayKeys($content, ['text' => 'message']);
+			$content = ArrayUtil::convertKeys($content, ['text' => 'message']);
 		} else {
-			$content = Util::convertArrayKeys($content, ['text' => 'name']);
+			$content = ArrayUtil::convertKeys($content, ['text' => 'name']);
 		}
 		return $content;
 	}

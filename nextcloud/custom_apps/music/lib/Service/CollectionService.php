@@ -7,10 +7,10 @@
  * later. See the COPYING file.
  *
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
- * @copyright Pauli Järvinen 2018 - 2024
+ * @copyright Pauli Järvinen 2018 - 2025
  */
 
-namespace OCA\Music\Utility;
+namespace OCA\Music\Service;
 
 use OCA\Music\AppFramework\Core\Logger;
 use OCA\Music\AppFramework\Db\UniqueConstraintViolationException;
@@ -35,7 +35,7 @@ use OCP\ICache;
  * (with tens of thousands of tracks, the size of the json may be more than 10 MB and the
  * DB may be configured with maximum object size of e.g. 1 MB).
  */
-class CollectionHelper {
+class CollectionService {
 	private Library $library;
 	private ICache $fileCache;
 	private Cache $dbCache;

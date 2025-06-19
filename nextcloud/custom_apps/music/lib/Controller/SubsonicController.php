@@ -12,7 +12,7 @@
 
 namespace OCA\Music\Controller;
 
-use OCP\AppFramework\Controller;
+use OCP\AppFramework\ApiController;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\RedirectResponse;
@@ -54,18 +54,21 @@ use OCA\Music\Http\XmlResponse;
 
 use OCA\Music\Middleware\SubsonicException;
 
-use OCA\Music\Utility\AmpacheImageService;
+use OCA\Music\Service\AmpacheImageService;
+use OCA\Music\Service\CoverService;
+use OCA\Music\Service\DetailsService;
+use OCA\Music\Service\LastfmService;
+use OCA\Music\Service\LibrarySettings;
+use OCA\Music\Service\PodcastService;
+
 use OCA\Music\Utility\AppInfo;
-use OCA\Music\Utility\CoverHelper;
-use OCA\Music\Utility\DetailsHelper;
+use OCA\Music\Utility\ArrayUtil;
 use OCA\Music\Utility\HttpUtil;
-use OCA\Music\Utility\LastfmService;
-use OCA\Music\Utility\LibrarySettings;
-use OCA\Music\Utility\PodcastService;
 use OCA\Music\Utility\Random;
+use OCA\Music\Utility\StringUtil;
 use OCA\Music\Utility\Util;
 
-class SubsonicController extends Controller {
+class SubsonicController extends ApiController {
 	const API_VERSION = '1.16.1';
 	const FOLDER_ID_ARTISTS = -1;
 	const FOLDER_ID_FOLDERS = -2;
@@ -83,8 +86,8 @@ class SubsonicController extends Controller {
 	private IUserManager $userManager;
 	private LibrarySettings $librarySettings;
 	private IL10N $l10n;
-	private CoverHelper $coverHelper;
-	private DetailsHelper $detailsHelper;
+	private CoverService $coverService;
+	private DetailsService $detailsService;
 	private LastfmService $lastfmService;
 	private PodcastService $podcastService;
 	private AmpacheImageService $imageService;
@@ -111,14 +114,14 @@ class SubsonicController extends Controller {
 								RadioStationBusinessLayer $radioStationBusinessLayer,
 								TrackBusinessLayer $trackBusinessLayer,
 								LibrarySettings $librarySettings,
-								CoverHelper $coverHelper,
-								DetailsHelper $detailsHelper,
+								CoverService $coverService,
+								DetailsService $detailsService,
 								LastfmService $lastfmService,
 								PodcastService $podcastService,
 								AmpacheImageService $imageService,
 								Random $random,
 								Logger $logger) {
-		parent::__construct($appname, $request);
+		parent::__construct($appname, $request, 'POST, GET', 'Authorization, Content-Type, Accept, X-Requested-With');
 
 		$this->albumBusinessLayer = $albumBusinessLayer;
 		$this->artistBusinessLayer = $artistBusinessLayer;
@@ -133,8 +136,8 @@ class SubsonicController extends Controller {
 		$this->userManager = $userManager;
 		$this->l10n = $l10n;
 		$this->librarySettings = $librarySettings;
-		$this->coverHelper = $coverHelper;
-		$this->detailsHelper = $detailsHelper;
+		$this->coverService = $coverService;
+		$this->detailsService = $detailsService;
 		$this->lastfmService = $lastfmService;
 		$this->podcastService = $podcastService;
 		$this->imageService = $imageService;
@@ -151,7 +154,7 @@ class SubsonicController extends Controller {
 	 * @param string $format Response format: xml/json/jsonp
 	 * @param string|null $callback Function name to use if the @a $format is 'jsonp'
 	 */
-	public function setResponseFormat(string $format, string $callback = null) {
+	public function setResponseFormat(string $format, ?string $callback = null) {
 		$this->format = $format;
 		$this->callback = $callback;
 	}
@@ -170,12 +173,13 @@ class SubsonicController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 * @NoSameSiteCookieRequired
+	 * @CORS
 	 */
 	public function handleRequest($method) {
 		$this->logger->log("Subsonic request $method", 'debug');
 
 		// Allow calling all methods with or without the postfix ".view"
-		if (Util::endsWith($method, ".view")) {
+		if (StringUtil::endsWith($method, ".view")) {
 			$method = \substr($method, 0, -\strlen(".view"));
 		}
 
@@ -199,7 +203,7 @@ class SubsonicController extends Controller {
 		}
 
 		$this->logger->log("Request $method not supported", 'warn');
-		return $this->subsonicErrorResponse(70, "Requested action $method is not supported");
+		return $this->subsonicErrorResponse(0, "Requested action $method is not supported");
 	}
 
 	/* -------------------------------------------------------------------------
@@ -253,13 +257,13 @@ class SubsonicController extends Controller {
 	 * @SubsonicAPI
 	 */
 	protected function getMusicDirectory(string $id) {
-		if (Util::startsWith($id, 'folder-')) {
+		if (StringUtil::startsWith($id, 'folder-')) {
 			return $this->getMusicDirectoryForFolder($id);
-		} elseif (Util::startsWith($id, 'artist-')) {
+		} elseif (StringUtil::startsWith($id, 'artist-')) {
 			return $this->getMusicDirectoryForArtist($id);
-		} elseif (Util::startsWith($id, 'album-')) {
+		} elseif (StringUtil::startsWith($id, 'album-')) {
 			return $this->getMusicDirectoryForAlbum($id);
-		} elseif (Util::startsWith($id, 'podcast_channel-')) {
+		} elseif (StringUtil::startsWith($id, 'podcast_channel-')) {
 			return $this->getMusicDirectoryForPodcastChannel($id);
 		} else {
 			throw new SubsonicException("Unsupported id format $id");
@@ -438,7 +442,7 @@ class SubsonicController extends Controller {
 
 		if (!empty($entity)) {
 			$rootFolder = $this->librarySettings->getFolder($userId);
-			$coverData = $this->coverHelper->getCover($entity, $userId, $rootFolder, $size);
+			$coverData = $this->coverService->getCover($entity, $userId, $rootFolder, $size);
 			$response = new FileResponse($coverData);
 			HttpUtil::setClientCachingDays($response, 30);
 			return $response;
@@ -467,7 +471,7 @@ class SubsonicController extends Controller {
 
 			$artistObj = $this->artistBusinessLayer->find($track->getArtistId(), $userId);
 			$rootFolder = $this->librarySettings->getFolder($userId);
-			$lyrics = $this->detailsHelper->getLyricsAsPlainText($track->getFileId(), $rootFolder);
+			$lyrics = $this->detailsService->getLyricsAsPlainText($track->getFileId(), $rootFolder);
 
 			return $this->subsonicResponse(['lyrics' => [
 					'artist' => $artistObj->getNameString($this->l10n),
@@ -487,7 +491,7 @@ class SubsonicController extends Controller {
 		$track = $this->trackBusinessLayer->find($trackId, $userId);
 		$artist = $this->artistBusinessLayer->find($track->getArtistId(), $userId);
 		$rootFolder = $this->librarySettings->getFolder($userId);
-		$allLyrics = $this->detailsHelper->getLyricsAsStructured($track->getFileId(), $rootFolder);
+		$allLyrics = $this->detailsService->getLyricsAsStructured($track->getFileId(), $rootFolder);
 
 		return $this->subsonicResponse(['lyricsList' => [
 			'structuredLyrics' => \array_map(function ($lyrics) use ($track, $artist) {
@@ -1197,7 +1201,7 @@ class SubsonicController extends Controller {
 	}
 
 	private function nameWithoutArticle(?string $name) : ?string {
-		return Util::splitPrefixAndBasename($name, $this->ignoredArticles)['basename'];
+		return StringUtil::splitPrefixAndBasename($name, $this->ignoredArticles)['basename'];
 	}
 
 	private static function getIndexingChar(?string $name) {
@@ -1246,7 +1250,7 @@ class SubsonicController extends Controller {
 
 		$folders = [];
 		foreach ($indexes as $indexChar => $bucketArtists) {
-			Util::arraySortByColumn($bucketArtists, 'sortName');
+			ArrayUtil::sortByColumn($bucketArtists, 'sortName');
 			$folders[] = ['name' => $indexChar, 'artist' => \array_column($bucketArtists, 'artist')];
 		}
 
@@ -1302,7 +1306,7 @@ class SubsonicController extends Controller {
 
 		$result = [];
 		foreach ($indexes as $indexChar => $bucketArtists) {
-			Util::arraySortByColumn($bucketArtists, 'sortName');
+			ArrayUtil::sortByColumn($bucketArtists, 'sortName');
 			$result[] = ['name' => $indexChar, 'artist' => \array_column($bucketArtists, 'artist')];
 		}
 
@@ -1474,7 +1478,7 @@ class SubsonicController extends Controller {
 			case 'random':
 				$allAlbums = $this->albumBusinessLayer->findAll($userId);
 				$indices = $this->random->getIndices(\count($allAlbums), $offset, $size, $userId, 'subsonic_albums');
-				$albums = Util::arrayMultiGet($allAlbums, $indices);
+				$albums = ArrayUtil::multiGet($allAlbums, $indices);
 				break;
 			case 'starred':
 				$albums = $this->albumBusinessLayer->findAllStarred($userId, $size, $offset);
@@ -1642,12 +1646,12 @@ class SubsonicController extends Controller {
 	private function doGetSimilarSongs(string $rootName, string $id, int $count) {
 		$userId = $this->user();
 
-		if (Util::startsWith($id, 'artist')) {
+		if (StringUtil::startsWith($id, 'artist')) {
 			$artistId = self::ripIdPrefix($id);
-		} elseif (Util::startsWith($id, 'album')) {
+		} elseif (StringUtil::startsWith($id, 'album')) {
 			$albumId = self::ripIdPrefix($id);
 			$artistId = $this->albumBusinessLayer->find($albumId, $userId)->getAlbumArtistId();
-		} elseif (Util::startsWith($id, 'track')) {
+		} elseif (StringUtil::startsWith($id, 'track')) {
 			$trackId = self::ripIdPrefix($id);
 			$artistId = $this->trackBusinessLayer->find($trackId, $userId)->getArtistId();
 		} else {
@@ -1766,7 +1770,7 @@ class SubsonicController extends Controller {
 	private function artistImageUrl(int $id) : string {
 		$token = $this->imageService->getToken('artist', $id, $this->keyId);
 		return $this->urlGenerator->linkToRouteAbsolute('music.ampacheImage.image',
-			['object_type' => 'artist', 'object_id' => $id, 'token' => $token, 'size' => CoverHelper::DO_NOT_CROP_OR_SCALE]);
+			['object_type' => 'artist', 'object_id' => $id, 'token' => $token, 'size' => CoverService::DO_NOT_CROP_OR_SCALE]);
 	}
 
 	/**
@@ -1795,7 +1799,7 @@ class SubsonicController extends Controller {
 		$content['type'] = AppInfo::getFullName();
 		$content['serverVersion'] = AppInfo::getVersion();
 		$content['openSubsonic'] = true;
-		$responseData = ['subsonic-response' => Util::arrayRejectRecursive($content, 'is_null')];
+		$responseData = ['subsonic-response' => ArrayUtil::rejectRecursive($content, 'is_null')];
 
 		if ($this->format == 'json') {
 			$response = new JSONResponse($responseData);

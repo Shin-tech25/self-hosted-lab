@@ -7,7 +7,7 @@
  * later. See the COPYING file.
  *
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
- * @copyright Pauli Järvinen 2021 - 2024
+ * @copyright Pauli Järvinen 2021 - 2025
  */
 
 namespace OCA\Music\BusinessLayer;
@@ -21,8 +21,7 @@ use OCA\Music\Db\MatchMode;
 use OCA\Music\Db\PodcastEpisodeMapper;
 use OCA\Music\Db\PodcastEpisode;
 use OCA\Music\Db\SortBy;
-
-use OCA\Music\Utility\Util;
+use OCA\Music\Utility\StringUtil;
 
 
 /**
@@ -90,27 +89,27 @@ class PodcastEpisodeBusinessLayer extends BusinessLayer {
 			throw new BusinessLayerException('Invalid episode, neither <guid> nor <enclosure url> is included');
 		}
 
-		$episode->setStreamUrl( Util::truncate($streamUrl, 2048) );
-		$episode->setMimetype( Util::truncate($mimetype, 256) );
+		$episode->setStreamUrl( StringUtil::truncate($streamUrl, 2048) );
+		$episode->setMimetype( StringUtil::truncate($mimetype, 256) );
 		$episode->setSize( $size );
 		$episode->setDuration( self::parseDuration((string)$itunesNodes->duration) );
-		$episode->setGuid( Util::truncate($guid, 2048) );
+		$episode->setGuid( StringUtil::truncate($guid, 2048) );
 		$episode->setGuidHash( \hash('md5', $guid) );
 		$episode->setTitle( self::parseTitle($itunesNodes->title, $xmlNode->title, $itunesNodes->episode) );
 		$episode->setEpisode( (int)$itunesNodes->episode ?: null );
 		$episode->setSeason( (int)$itunesNodes->season ?: null );
-		$episode->setLinkUrl( Util::truncate((string)$xmlNode->link, 2048) );
+		$episode->setLinkUrl( StringUtil::truncate((string)$xmlNode->link, 2048) );
 		$episode->setPublished( \date(BaseMapper::SQL_DATE_FORMAT, \strtotime((string)($xmlNode->pubDate))) );
-		$episode->setKeywords( Util::truncate((string)$itunesNodes->keywords, 256) );
-		$episode->setCopyright( Util::truncate((string)$xmlNode->copyright, 256) );
-		$episode->setAuthor( Util::truncate((string)($xmlNode->author ?: $itunesNodes->author), 256) );
+		$episode->setKeywords( StringUtil::truncate((string)$itunesNodes->keywords, 256) );
+		$episode->setCopyright( StringUtil::truncate((string)$xmlNode->copyright, 256) );
+		$episode->setAuthor( StringUtil::truncate((string)($xmlNode->author ?: $itunesNodes->author), 256) );
 		$episode->setDescription( (string)($xmlNode->description ?: $itunesNodes->summary) );
 
 		return $episode;
 	}
 
 	private static function parseTitle($itunesTitle, $title, $episode) : ?string {
-		// Prefer to use the iTunes title over the standard title, becuase sometimes,
+		// Prefer to use the iTunes title over the standard title, because sometimes,
 		// the generic title contains the episode number which is also provided separately
 		// while the iTunes title does not.
 		$result = (string)($itunesTitle ?: $title);
@@ -124,7 +123,7 @@ class PodcastEpisodeBusinessLayer extends BusinessLayer {
 			}
 		}
 
-		return Util::truncate($result, 256);
+		return StringUtil::truncate($result, 256);
 	}
 
 	private static function parseDuration(string $data) :?int {

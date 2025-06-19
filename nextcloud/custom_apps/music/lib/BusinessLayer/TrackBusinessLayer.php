@@ -22,8 +22,8 @@ use OCA\Music\Db\MatchMode;
 use OCA\Music\Db\SortBy;
 use OCA\Music\Db\TrackMapper;
 use OCA\Music\Db\Track;
-
-use OCA\Music\Utility\Util;
+use OCA\Music\Utility\ArrayUtil;
+use OCA\Music\Utility\StringUtil;
 
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\Files\FileInfo;
@@ -317,7 +317,7 @@ class TrackBusinessLayer extends BusinessLayer {
 			$parentIds = \array_unique(\array_column($foldersToProcess, 'parent'));
 			// do not process root even if it's included in $foldersToProcess
 			$parentIds = \array_filter($parentIds, fn($i) => $i !== null);
-			$parentIds = Util::arrayDiff($parentIds, \array_keys($lut));
+			$parentIds = ArrayUtil::diff($parentIds, \array_keys($lut));
 			$parentFolders = $this->mapper->findNodeNamesAndParents($parentIds);
 
 			$foldersToProcess = [];
@@ -398,7 +398,7 @@ class TrackBusinessLayer extends BusinessLayer {
 			$title, $number, $discNumber, $year, $genreId, $artistId, $albumId,
 			$fileId, $mimetype, $userId, $length=null, $bitrate=null) {
 		$track = new Track();
-		$track->setTitle(Util::truncate($title, 256)); // some DB setups can't truncate automatically to column max size
+		$track->setTitle(StringUtil::truncate($title, 256)); // some DB setups can't truncate automatically to column max size
 		$track->setNumber($number);
 		$track->setDisk($discNumber);
 		$track->setYear($year);
@@ -434,7 +434,7 @@ class TrackBusinessLayer extends BusinessLayer {
 			$result = false;
 		} else {
 			// delete all the matching tracks
-			$trackIds = Util::extractIds($tracks);
+			$trackIds = ArrayUtil::extractIds($tracks);
 			$this->deleteById($trackIds);
 
 			// find all distinct albums, artists, and users of the deleted tracks

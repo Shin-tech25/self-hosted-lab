@@ -21,9 +21,9 @@ use OCA\Music\Db\PlaylistMapper;
 use OCA\Music\Db\SortBy;
 use OCA\Music\Db\Track;
 use OCA\Music\Db\TrackMapper;
-
+use OCA\Music\Utility\ArrayUtil;
 use OCA\Music\Utility\Random;
-use OCA\Music\Utility\Util;
+use OCA\Music\Utility\StringUtil;
 
 /**
  * Base class functions with actually used inherited types to help IDE and Scrutinizer:
@@ -94,7 +94,7 @@ class PlaylistBusinessLayer extends BusinessLayer {
 
 	public function create(string $name, string $userId) : Playlist {
 		$playlist = new Playlist();
-		$playlist->setName(Util::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
+		$playlist->setName(StringUtil::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
 		$playlist->setUserId($userId);
 
 		return $this->mapper->insert($playlist);
@@ -102,14 +102,14 @@ class PlaylistBusinessLayer extends BusinessLayer {
 
 	public function rename(string $name, int $playlistId, string $userId) : Playlist {
 		$playlist = $this->find($playlistId, $userId);
-		$playlist->setName(Util::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
+		$playlist->setName(StringUtil::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
 		$this->mapper->update($playlist);
 		return $playlist;
 	}
 
 	public function setComment(string $comment, int $playlistId, string $userId) : Playlist {
 		$playlist = $this->find($playlistId, $userId);
-		$playlist->setComment(Util::truncate($comment, 256)); // some DB setups can't truncate automatically to column max size
+		$playlist->setComment(StringUtil::truncate($comment, 256)); // some DB setups can't truncate automatically to column max size
 		$this->mapper->update($playlist);
 		return $playlist;
 	}
@@ -144,7 +144,7 @@ class PlaylistBusinessLayer extends BusinessLayer {
 
 		// The $tracks contains the songs in unspecified order and with no duplicates.
 		// Build a new array where the tracks are in the same order as in $trackIds.
-		$tracksById = Util::createIdLookupTable($tracks);
+		$tracksById = ArrayUtil::createIdLookupTable($tracks);
 
 		$playlistTracks = [];
 		foreach ($trackIds as $index => $trackId) {
@@ -232,7 +232,7 @@ class PlaylistBusinessLayer extends BusinessLayer {
 		// Pick the final random set of tracks
 		$tracks = Random::pickItems($tracks, $size);
 
-		$playlist->setTrackIdsFromArray(Util::extractIds($tracks));
+		$playlist->setTrackIdsFromArray(ArrayUtil::extractIds($tracks));
 
 		return $playlist;
 	}

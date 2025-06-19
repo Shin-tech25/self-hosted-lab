@@ -24,14 +24,15 @@ use OCP\IURLGenerator;
 
 use OCA\Music\AppFramework\BusinessLayer\BusinessLayerException;
 use OCA\Music\AppFramework\Core\Logger;
+use OCA\Music\AppFramework\Utility\FileExistsException;
 use OCA\Music\BusinessLayer\RadioStationBusinessLayer;
 use OCA\Music\Http\ErrorResponse;
 use OCA\Music\Http\FileResponse;
 use OCA\Music\Http\RelayStreamResponse;
+use OCA\Music\Service\PlaylistFileService;
+use OCA\Music\Service\RadioService;
+use OCA\Music\Service\StreamTokenService;
 use OCA\Music\Utility\HttpUtil;
-use OCA\Music\Utility\PlaylistFileService;
-use OCA\Music\Utility\RadioService;
-use OCA\Music\Utility\StreamTokenService;
 
 class RadioApiController extends Controller {
 	private IConfig $config;
@@ -156,7 +157,7 @@ class RadioApiController extends Controller {
 	/**
 	 * export all radio stations to a file
 	 *
-	 * @param string $name target file name without the file extension
+	 * @param string $name target file name
 	 * @param string $path parent folder path
 	 * @param string $oncollision action to take on file name collision,
 	 *								supported values:
@@ -167,7 +168,7 @@ class RadioApiController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
-	public function exportAllToFile(string $name, string $path, string $oncollision) {
+	public function exportAllToFile(string $name, string $path, string $oncollision='abort') {
 		if ($this->userFolder === null) {
 			// This shouldn't get actually run. The folder may be null in case the user has already logged out.
 			// But in that case, the framework should block the execution before it reaches here.
@@ -175,12 +176,12 @@ class RadioApiController extends Controller {
 		}
 		try {
 			$exportedFilePath = $this->playlistFileService->exportRadioStationsToFile(
-					$this->userId, $this->userFolder, $path, $name . '.m3u8', $oncollision);
+					$this->userId, $this->userFolder, $path, $name, $oncollision);
 			return new JSONResponse(['wrote_to_file' => $exportedFilePath]);
 		} catch (\OCP\Files\NotFoundException $ex) {
 			return new ErrorResponse(Http::STATUS_NOT_FOUND, 'folder not found');
-		} catch (\RuntimeException $ex) {
-			return new ErrorResponse(Http::STATUS_CONFLICT, $ex->getMessage());
+		} catch (FileExistsException $ex) {
+			return new ErrorResponse(Http::STATUS_CONFLICT, 'file already exists', ['path' => $ex->getPath(), 'suggested_name' => $ex->getAltName()]);
 		} catch (\OCP\Files\NotPermittedException $ex) {
 			return new ErrorResponse(Http::STATUS_FORBIDDEN, 'user is not allowed to write to the target file');
 		}

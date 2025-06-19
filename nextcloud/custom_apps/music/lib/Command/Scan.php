@@ -13,7 +13,7 @@
  * @copyright Thomas Müller 2013
  * @copyright Bart Visscher 2013
  * @copyright Leizh 2014
- * @copyright Pauli Järvinen 2017 - 2024
+ * @copyright Pauli Järvinen 2017 - 2025
  */
 
 namespace OCA\Music\Command;
@@ -22,7 +22,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-use OCA\Music\Utility\Scanner;
+use OCA\Music\Service\Scanner;
 
 class Scan extends BaseCommand {
 
@@ -42,7 +42,7 @@ class Scan extends BaseCommand {
 					'debug',
 					null,
 					InputOption::VALUE_NONE,
-					'will run the scan in debug mode (memory usage)'
+					'will run the scan in debug mode, showing memory and time consumption'
 			)
 			->addOption(
 					'clean-obsolete',
@@ -60,7 +60,7 @@ class Scan extends BaseCommand {
 					'rescan-modified',
 					null,
 					InputOption::VALUE_NONE,
-					'rescan files which have mofication time later than the previous scan time (new files not scanned)'
+					'rescan files which have modification time later than the previous scan time (new files not scanned)'
 			)
 			->addOption(
 					'folder',
@@ -122,8 +122,10 @@ class Scan extends BaseCommand {
 		$output->writeln('Found ' . \count($filesToScan) . ' music files to scan' . ($folder ? " in '$folder'" : ''));
 
 		if (\count($filesToScan)) {
-			$processedCount = $this->scanner->scanFiles($user, $filesToScan, $debug ? $output : null);
-			$output->writeln("Added $processedCount files to database of <info>$user</info>");
+			$stats = $this->scanner->scanFiles($user, $filesToScan, $debug ? $output : null);
+			$output->writeln("Added {$stats['count']} files to database of <info>$user</info>");
+			$output->writeln('Time consumed to analyze files: ' . ($stats['anlz_time'] / 1000) . ' s');
+			$output->writeln('Time consumed to update DB: ' . ($stats['db_time'] / 1000) . ' s');
 		}
 
 		$output->writeln("Searching cover images for albums with no cover art set...");

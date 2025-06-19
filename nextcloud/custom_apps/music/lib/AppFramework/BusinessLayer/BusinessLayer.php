@@ -10,7 +10,7 @@
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
  * @copyright Alessandro Cosentino 2012
  * @copyright Bernhard Posselt 2012, 2014
- * @copyright Pauli Järvinen 2017 - 2024
+ * @copyright Pauli Järvinen 2017 - 2025
  */
 
 namespace OCA\Music\AppFramework\BusinessLayer;
@@ -19,7 +19,7 @@ use OCA\Music\Db\BaseMapper;
 use OCA\Music\Db\Entity;
 use OCA\Music\Db\MatchMode;
 use OCA\Music\Db\SortBy;
-use OCA\Music\Utility\Util;
+use OCA\Music\Utility\ArrayUtil;
 use OCA\Music\Utility\Random;
 
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -123,7 +123,7 @@ abstract class BusinessLayer {
 	 * @return Entity[]
 	 * @phpstan-return EntityType[]
 	 */
-	public function findById(array $ids, string $userId=null, bool $preserveOrder=false) : array {
+	public function findById(array $ids, ?string $userId=null, bool $preserveOrder=false) : array {
 		$entities = [];
 		if (\count($ids) > 0) {
 			// don't use more than 999 SQL args in one query since that may be a problem for SQLite
@@ -134,7 +134,7 @@ abstract class BusinessLayer {
 		}
 
 		if ($preserveOrder) {
-			$lut = Util::createIdLookupTable($entities);
+			$lut = ArrayUtil::createIdLookupTable($entities);
 			$result = [];
 			foreach ($ids as $id) {
 				$result[] = $lut[$id];
@@ -236,7 +236,7 @@ abstract class BusinessLayer {
 				// in case the random order is requested, the limit/offset handling happens after the DB query
 				$entities = $this->mapper->findAllAdvanced($conjunction, $rules, $userId, SortBy::Name);
 				$indices = $random->getIndices(\count($entities), $offset, $limit, $userId, 'adv_search_'.$this->mapper->unprefixedTableName());
-				$entities = Util::arrayMultiGet($entities, $indices);
+				$entities = ArrayUtil::multiGet($entities, $indices);
 			} else {
 				$entities = $this->mapper->findAllAdvanced($conjunction, $rules, $userId, $sortBy, $limit, $offset);
 			}

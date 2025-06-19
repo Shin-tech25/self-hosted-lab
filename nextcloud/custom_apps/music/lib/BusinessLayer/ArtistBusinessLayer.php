@@ -9,7 +9,7 @@
  * @author Morris Jobke <hey@morrisjobke.de>
  * @author Pauli Järvinen <pauli.jarvinen@gmail.com>
  * @copyright Morris Jobke 2013, 2014
- * @copyright Pauli Järvinen 2017 - 2024
+ * @copyright Pauli Järvinen 2017 - 2025
  */
 
 namespace OCA\Music\BusinessLayer;
@@ -21,8 +21,7 @@ use OCA\Music\Db\Artist;
 use OCA\Music\Db\ArtistMapper;
 use OCA\Music\Db\MatchMode;
 use OCA\Music\Db\SortBy;
-
-use OCA\Music\Utility\Util;
+use OCA\Music\Utility\StringUtil;
 
 use OCP\IL10N;
 use OCP\Files\File;
@@ -126,7 +125,7 @@ class ArtistBusinessLayer extends BusinessLayer {
 	 */
 	public function addOrUpdateArtist(?string $name, string $userId) : Artist {
 		$artist = new Artist();
-		$artist->setName(Util::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
+		$artist->setName(StringUtil::truncate($name, 256)); // some DB setups can't truncate automatically to column max size
 		$artist->setUserId($userId);
 		$artist->setHash(\hash('md5', \mb_strtolower($name ?? '')));
 		return $this->mapper->updateOrInsert($artist);
@@ -244,7 +243,7 @@ class ArtistBusinessLayer extends BusinessLayer {
 			return true; // exact match
 		} else {
 			// iterate over all the bytes and require that all the other bytes are equal but
-			// underscores are allowed to match any forbidden filesystem chracter
+			// underscores are allowed to match any forbidden filesystem character
 			$matchedChars = self::FORBIDDEN_CHARS_IN_FILE_NAME . '_';
 			for ($i = 0; $i < $length; ++$i) {
 				if ($filename[$i] === '_') {
