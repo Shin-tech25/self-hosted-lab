@@ -4,13 +4,12 @@ namespace OCA\Epubviewer\Controller;
 
 use OCA\Epubviewer\Config;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IL10N;
 use OCP\IRequest;
 
 class SettingsController extends Controller {
-	private $config;
-	private $l10n;
 	/**
 	 * @param string $appName
 	 * @param IRequest $request
@@ -19,26 +18,17 @@ class SettingsController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		Config $config,
-		IL10N $l10n,
+		private Config $config,
+		private IL10N $l10n,
 	) {
 		parent::__construct($appName, $request);
-		$this->config = $config;
-		$this->l10n = $l10n;
 	}
 
 	/**
 	 * @brief set preference for file type association
-	 *
-	 * @NoAdminRequired
-	 *
-	 * @param string $EpubEnable
-	 * @param string $PdfEnable
-	 * @param string $CbxEnable
-	 *
-	 * @return array|JSONResponse
 	 */
-	public function setPreference(string $EpubEnable, string $PdfEnable, string $CbxEnable) {
+	#[NoAdminRequired]
+	public function setPreference(string $EpubEnable, string $PdfEnable, string $CbxEnable): array|JSONResponse {
 
 		$this->config->setUserValue('epub_enable', $EpubEnable);
 		$this->config->setUserValue('pdf_enable', $PdfEnable);

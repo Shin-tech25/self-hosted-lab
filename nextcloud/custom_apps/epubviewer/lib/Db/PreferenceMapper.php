@@ -12,13 +12,13 @@ use OCP\IDBConnection;
  */
 class PreferenceMapper extends QBMapper {
 
-	protected string $userId;
-	private Time $time;
-
-	public function __construct(IDBConnection $db, Time $time, ?string $userId) {
+	public function __construct(
+		IDBConnection $db, 
+		private Time $time, 
+		private ?string $userId
+	) {
 		parent::__construct($db, 'reader_prefs', Preference::class);
 		$this->userId = $userId ?? '';
-		$this->time = $time;
 	}
 
 	/**
@@ -100,14 +100,14 @@ class PreferenceMapper extends QBMapper {
 		return $preference;
 	}
 
-	public function deleteForFileId($fileId): void {
+	public function deleteForFileId(int $fileId): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete($this->getTableName())
 			->where($qb->expr()->eq('file_id', $qb->createNamedParameter($fileId)));
 		$qb->executeStatement();
 	}
 
-	public function deleteForUserId($userId): void {
+	public function deleteForUserId(string $userId): void {
 		$qb = $this->db->getQueryBuilder();
 		$qb->delete($this->getTableName())
 			->where($qb->expr()->eq('user_id', $qb->createNamedParameter($userId)));
@@ -119,7 +119,7 @@ class PreferenceMapper extends QBMapper {
 	 *
 	 * @psalm-return array<Preference>
 	 */
-	public function findAll($fileId): array {
+	public function findAll(int $fileId): array {
 		$qb = $this->db->getQueryBuilder();
 		$qb->select('*')
 			->from($this->getTableName())

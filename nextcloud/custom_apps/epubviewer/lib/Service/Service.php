@@ -11,14 +11,10 @@ use OCP\AppFramework\Db\QBMapper;
 abstract class Service {
 
 	/**
-	 * @var QBMapper<T>
-	 */
-	protected $mapper;
-
-	/**
 	 * @param QBMapper<T> $mapper
 	 */
-	public function __construct(QBMapper $mapper) {
-		$this->mapper = $mapper;
+	public function __construct(
+		protected QBMapper $mapper
+	) {
 	}
 }

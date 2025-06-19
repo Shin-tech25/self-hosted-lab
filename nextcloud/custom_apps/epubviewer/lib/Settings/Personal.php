@@ -8,15 +8,10 @@ use OCP\Settings\ISettings;
 
 class Personal implements ISettings {
 
-	private string $userId;
-	private IConfig $configManager;
-
 	public function __construct(
-		string $userId,
-		IConfig $configManager,
+		private string $userId,
+		private IConfig $configManager,
 	) {
-		$this->userId = $userId;
-		$this->configManager = $configManager;
 	}
 
 	/**
@@ -34,28 +29,10 @@ class Personal implements ISettings {
 	}
 
 	/**
-	 * Print config section (ownCloud 10)
-	 *
-	 * @return TemplateResponse
-	 */
-	public function getPanel() {
-		return $this->getForm();
-	}
-
-	/**
 	 * @return string the section ID, e.g. 'sharing'
 	 * @since 9.1
 	 */
 	public function getSection() {
-		return 'epubviewer';
-	}
-
-	/**
-	 * Get section ID (ownCloud 10)
-	 *
-	 * @return string
-	 */
-	public function getSectionID() {
 		return 'epubviewer';
 	}
 

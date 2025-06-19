@@ -7,6 +7,8 @@ namespace OCA\Epubviewer\Controller;
 use OCA\Epubviewer\Service\BookmarkService;
 use OCA\Epubviewer\Service\PreferenceService;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\AppFramework\Http\TemplateResponse;
@@ -19,15 +21,6 @@ use OCP\Share\IManager;
 use function pathinfo;
 
 class PageController extends Controller {
-
-	/** @var IURLGenerator */
-	private IURLGenerator $urlGenerator;
-	/** @var IRootFolder */
-	private IRootFolder $rootFolder;
-	private IManager $shareManager;
-	private ?string $userId;
-	private BookmarkService $bookmarkService;
-	private PreferenceService $preferenceService;
 
 	/**
 	 * @param string $appName
@@ -42,28 +35,18 @@ class PageController extends Controller {
 	public function __construct(
 		$appName,
 		IRequest $request,
-		IURLGenerator $urlGenerator,
-		IRootFolder $rootFolder,
-		IManager $shareManager,
-		$userId,
-		BookmarkService $bookmarkService,
-		PreferenceService $preferenceService,
+		private IURLGenerator $urlGenerator,
+		private IRootFolder $rootFolder,
+		private IManager $shareManager,
+		private ?string $userId,
+		private ?BookmarkService $bookmarkService,
+		private ?PreferenceService $preferenceService,
 	) {
 		parent::__construct($appName, $request);
-		$this->urlGenerator = $urlGenerator;
-		$this->rootFolder = $rootFolder;
-		$this->shareManager = $shareManager;
-		$this->userId = $userId;
-		$this->bookmarkService = $bookmarkService;
-		$this->preferenceService = $preferenceService;
 	}
 
-	/**
-	 * @PublicPage
-	 * @NoCSRFRequired
-	 *
-	 * @return TemplateResponse
-	 */
+	#[NoCSRFRequired]
+	#[PublicPage]
 	public function showReader(): TemplateResponse {
 		$params = [];
 		$file = $this->request->getParam('file');
@@ -88,7 +71,19 @@ class PageController extends Controller {
 		];
 
 		$scope = $template = $templates[$type];
-		$cursor = $this->bookmarkService->getCursor($fileInfo['fileId']);
+
+
+		$cursor = null;
+		$defaults = null;
+		$preferences = null;
+		$annotations = null;
+
+		if ($this->userId !== null) {
+			$cursor = $this->bookmarkService->getCursor($fileInfo['fileId']);
+			$defaults  = $this->preferenceService->getDefault($scope);
+			$preferences = $this->preferenceService->get($scope, (int)$fileInfo['fileId']);
+			$annotations = $this->bookmarkService->get((int)$fileInfo['fileId']);
+		}
 		
 		$params = [
 			'urlGenerator' => $this->urlGenerator,
@@ -98,9 +93,9 @@ class PageController extends Controller {
 			'fileName' => $fileInfo['fileName'],
 			'fileType' => $fileInfo['fileType'],
 			'cursor' => $cursor ? $this->toJson($cursor) : null,
-			'defaults' => $this->toJson($this->preferenceService->getDefault($scope)),
-			'preferences' => $this->toJson($this->preferenceService->get($scope, (int)$fileInfo['fileId'])),
-			'annotations' => $this->toJson($this->bookmarkService->get((int)$fileInfo['fileId']))
+			'defaults' => $defaults ? $this->toJson($defaults) : null,
+			'preferences' => $preferences ? $this->toJson($preferences) : null,
+			'annotations' => $annotations ? $this->toJson($annotations) : null
 		];
 
 		$policy = new ContentSecurityPolicy();
@@ -150,7 +145,7 @@ class PageController extends Controller {
 			$fileId = $node->getId();
 		} else {
 			// For user files, we need a logged in user
-			if (!$this->userId) {
+			if ($this->userId === null || empty($this->userId)) {
 				throw new NotFoundException('User not found');
 			}
 			
@@ -177,7 +172,7 @@ class PageController extends Controller {
 	}
 
 	public function load(): JSONResponse {
-		if (!$this->userId) {
+		if ($this->userId === null || empty($this->userId)) {
 			return new JSONResponse(['success' => false, 'error' => 'User not found']);
 		}
 
