@@ -1,0 +1,2 @@
+OCA.Maps?.registerMapsAction({label:t("maps","Report Error"),icon:"icon-alert-outline",callback:t=>{const e=`https://www.openstreetmap.org/note/new?lat=${t.latitude}&lon=${t.longitude}#map=18/${t.latitude}/${t.longitude}`;window.open(e,"_blank")?.focus()}});
+//# sourceMappingURL=maps-report-error-map-action.js.map
