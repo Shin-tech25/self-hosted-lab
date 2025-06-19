@@ -334,10 +334,11 @@ OC.L10N.register(
     "Train from {depStation} to {arrStation}" : "Τρένο από {depStation} προς {arrStation}",
     "Train" : "Τρένο",
     "Flag" : "Σημαία",
+    "Recipient" : "Παραλήπτης",
     "Delete filter" : "Διαγραφή φίλτρου",
     "Operator" : "Διαχειριστής",
-    "Actions" : "Ενέργειες",
-    "New action" : "Νέα ενέργεια",
+    "contains" : "περιέχει",
+    "matches" : "ταιριάζει",
     "Priority" : "Προτεραιότητα",
     "Mail app" : "Εφαρμογή αλληλογραφίας",
     "The mail app allows users to read mails on their IMAP accounts." : "Η εφαρμογή ταχυδρομείου επιτρέπει στους χρήστες να διαβάζουν μηνύματα από τους λογαριασμούς τους IMAP.",
@@ -387,6 +388,8 @@ OC.L10N.register(
     "Click here if you are not automatically redirected within the next few seconds." : "Κάντε κλικ εδώ εάν δεν ανακατευθυνθείτε αυτόματα μέσα σε λίγα δευτερόλεπτα.",
     "Redirect" : "Ανακατεύθυνση",
     "The link leads to %s" : "Αυτός ο σύνδεσμος οδηγεί στο %s",
-    "Continue to %s" : "Συνέχεια στο %s"
+    "Continue to %s" : "Συνέχεια στο %s",
+    "Actions" : "Ενέργειες",
+    "New action" : "Νέα ενέργεια"
 },
 "nplurals=2; plural=(n != 1);");

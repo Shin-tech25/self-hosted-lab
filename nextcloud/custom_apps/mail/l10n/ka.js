@@ -513,7 +513,7 @@ OC.L10N.register(
     "Train from {depStation} to {arrStation}" : "Train from {depStation} to {arrStation}",
     "Train" : "Train",
     "Operator" : "ოპერატორი",
-    "Actions" : "Actions",
+    "matches" : "matches",
     "Priority" : "Priority",
     "Successfully updated config for \"{domain}\"" : "Successfully updated config for \"{domain}\"",
     "Error saving config" : "Error saving config",
@@ -547,8 +547,6 @@ OC.L10N.register(
     "Gmail allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection or Google accounts that use two-factor authentication and app passwords." : "Gmail allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection or Google accounts that use two-factor authentication and app passwords.",
     "You have to register a new Client ID for a \"Web application\" in the Google Cloud console. Add the URL {url} as authorized redirect URI." : "You have to register a new Client ID for a \"Web application\" in the Google Cloud console. Add the URL {url} as authorized redirect URI.",
     "Microsoft integration" : "Microsoft integration",
-    "Microsoft allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection." : "Microsoft allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection.",
-    "You have to register a new app in the Microsoft Azure Active Directory portal. Add the URL {url} as redirect URI." : "You have to register a new app in the Microsoft Azure Active Directory portal. Add the URL {url} as redirect URI.",
     "Successfully set up anti spam email addresses" : "Successfully set up anti spam email addresses",
     "Error saving anti spam email addresses" : "Error saving anti spam email addresses",
     "Successfully deleted anti spam reporting email" : "Successfully deleted anti spam reporting email",
@@ -654,6 +652,7 @@ OC.L10N.register(
     "Redirect" : "Redirect",
     "The link leads to %s" : "The link leads to %s",
     "If you do not want to visit that page, you can return to <a href=\"%s\">Mail</a>." : "If you do not want to visit that page, you can return to <a href=\"%s\">Mail</a>.",
-    "Continue to %s" : "Continue to %s"
+    "Continue to %s" : "Continue to %s",
+    "Actions" : "Actions"
 },
 "nplurals=2; plural=(n!=1);");

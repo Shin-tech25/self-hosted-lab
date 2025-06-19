@@ -100,6 +100,7 @@ OC.L10N.register(
     "Accounts" : "حساب‌ها",
     "Add mail account" : "حساب کاربری پست الکترونیکی اضافه کنید",
     "General" : "عمومی",
+    "Layout" : "چیدمان",
     "List" : "فهرست",
     "Sorting" : "مرتب سازی",
     "Newest" : "Newest",
@@ -481,8 +482,8 @@ OC.L10N.register(
     "Flag" : "Flag",
     "Delete filter" : "Delete filter",
     "Operator" : "Operator",
-    "Actions" : "کنش‌ها",
-    "New action" : "New action",
+    "contains" : "contains",
+    "matches" : "مطابق است",
     "Priority" : "اولویت",
     "Successfully updated config for \"{domain}\"" : "Successfully updated config for \"{domain}\"",
     "Error saving config" : "Error saving config",
@@ -507,8 +508,6 @@ OC.L10N.register(
     "Gmail integration" : "Gmail integration",
     "You have to register a new Client ID for a \"Web application\" in the Google Cloud console. Add the URL {url} as authorized redirect URI." : "You have to register a new Client ID for a \"Web application\" in the Google Cloud console. Add the URL {url} as authorized redirect URI.",
     "Microsoft integration" : "Microsoft integration",
-    "Microsoft allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection." : "Microsoft allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection.",
-    "You have to register a new app in the Microsoft Azure Active Directory portal. Add the URL {url} as redirect URI." : "You have to register a new app in the Microsoft Azure Active Directory portal. Add the URL {url} as redirect URI.",
     "Successfully set up anti spam email addresses" : "Successfully set up anti spam email addresses",
     "Error saving anti spam email addresses" : "Error saving anti spam email addresses",
     "Successfully deleted anti spam reporting email" : "Successfully deleted anti spam reporting email",
@@ -611,6 +610,8 @@ OC.L10N.register(
     "Redirect" : "تغییر مسیر",
     "The link leads to %s" : "پیوند منجر به%s",
     "If you do not want to visit that page, you can return to <a href=\"%s\">Mail</a>." : "If you do not want to visit that page, you can return to <a href=\"%s\">Mail</a>.",
-    "Continue to %s" : "ادامه دهید%s"
+    "Continue to %s" : "ادامه دهید%s",
+    "Actions" : "کنش‌ها",
+    "New action" : "New action"
 },
 "nplurals=2; plural=(n > 1);");

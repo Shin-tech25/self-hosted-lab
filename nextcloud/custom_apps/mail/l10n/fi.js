@@ -407,11 +407,12 @@ OC.L10N.register(
     "Train from {depStation} to {arrStation}" : "Juna asemalta {depStation} asemalle {arrStation}",
     "Train" : "Juna",
     "Flag" : "Lippu",
+    "Recipient" : "Vastaanottaja",
     "Delete filter" : "Poista suodatin",
     "Operator" : "Operaattori",
+    "contains" : "sisältää",
+    "matches" : "täsmää",
     "Filter name" : "Nimisuodatin",
-    "Actions" : "Toiminnot",
-    "New action" : "Uusi toiminto",
     "Priority" : "Tärkeys",
     "Mail app" : "Sähköpostisovellus",
     "The mail app allows users to read mails on their IMAP accounts." : "Tämä sähköpostisovellus mahdollistaa käyttäjien lukea sähköpostiviestejä IMAP-tileiltä.",
@@ -422,8 +423,6 @@ OC.L10N.register(
     "Anti Spam Service" : "Roskapostin estopalvelu",
     "Gmail integration" : "Gmail-integraatio",
     "Microsoft integration" : "Microsoft-integraatio",
-    "Microsoft allows users to access their email via IMAP. For security reasons this access is only possible with an OAuth 2.0 connection." : "Microsoft sallii käyttäjien yhdistää sähköpostiin IMAP:ia käyttäen. Tietoturvasyistä tällainen käyttö on mahdollista vain OAuth 2.0 -yhteydellä.",
-    "You have to register a new app in the Microsoft Azure Active Directory portal. Add the URL {url} as redirect URI." : "Rekisteröi uusi sovellus Microsoft Azure Active Directory -portaalissa. Lisää URL-osoite {url} uudelleenohjauksen URI:ksi.",
     "Anti Spam" : "Roskapostin esto",
     "The original message will be attached as a \"message/rfc822\" attachment." : "Alkuperäinen viesti asetetaan \"message/rfc822\"-liitteeksi.",
     "Reset" : "Palauta",
@@ -496,6 +495,8 @@ OC.L10N.register(
     "Click here if you are not automatically redirected within the next few seconds." : "Klikkaa jos sinua ei uudelleenohjata automaattisesti muutamaan sekuntiin.",
     "Redirect" : "Uudelleenohjaus",
     "The link leads to %s" : "Tämä linkki johtaa kohteeseen %s",
-    "Continue to %s" : "Jatka sivulle %s"
+    "Continue to %s" : "Jatka sivulle %s",
+    "Actions" : "Toiminnot",
+    "New action" : "Uusi toiminto"
 },
 "nplurals=2; plural=(n != 1);");
