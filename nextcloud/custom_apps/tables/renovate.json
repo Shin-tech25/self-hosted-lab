@@ -1,0 +1,111 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:base",
+		":semanticCommits",
+		":gitSignOff"
+	],
+	"timezone": "Europe/Berlin",
+	"schedule": [
+		"every weekend"
+	],
+	"labels": [
+		"dependencies",
+		"3. to review"
+	],
+	"rangeStrategy": "bump",
+	"rebaseWhen": "conflicted",
+	"ignoreUnstable": false,
+	"baseBranches": [
+		"main"
+	],
+	"enabledManagers": [
+		"npm",
+		"composer",
+		"github-actions"
+	],
+	"ignoreDeps": [
+		"node",
+		"npm"
+	],
+	"packageRules": [
+		{
+			"matchUpdateTypes": [
+				"major",
+				"minor"
+			],
+			"matchBaseBranches": ["/^stable0\\.[3-8]$/"],
+			"enabled": false
+		},
+		{
+			"description": "Request JavaScript reviews",
+			"matchManagers": [
+				"npm"
+			],
+			"reviewers": [
+				"enjeck"
+			]
+		},
+		{
+			"description": "Request PHP reviews",
+			"matchManagers": [
+				"composer"
+			],
+			"reviewers": [
+				"blizzz"
+			]
+		},
+		{
+			"description": "Request maintainer reviews",
+			"matchManagers": [
+				"github-actions"
+			],
+			"extends": [
+				"schedule:monthly"
+			],
+			"reviewers": [
+				"enjeck",
+				"blizzz"
+			]
+		},
+		{
+			"groupName": "cypress",
+			"matchPackageNames": [
+				"cypress",
+				"@nextcloud/cypress",
+				"@cypress/"
+			]
+		},
+		{
+			"groupName": "tiptap",
+			"matchPackagePrefixes": [
+				"@tiptap/",
+				"prosemirror-"
+			]
+		},
+		{
+			"matchPackageNames": [
+				"vue"
+			],
+			"allowedVersions": "<3"
+		},
+		{
+			"matchPackageNames": [
+				"vue-router"
+			],
+			"allowedVersions": "<4"
+		},
+		{
+			"matchPackageNames": [
+				"vueuse"
+			],
+			"allowedVersions": "<12"
+		},
+		{
+			"matchPackageNames": [
+				"@vue/test-utils"
+			],
+			"allowedVersions": "<2"
+		}
+	]
+}
