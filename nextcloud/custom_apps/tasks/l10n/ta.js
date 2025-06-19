@@ -1,0 +1,25 @@
+OC.L10N.register(
+    "tasks",
+    {
+    "Important" : "முக்கியமான ",
+    "Today" : "இன்று",
+    "Week" : "வாரம்",
+    "All" : "எல்லாம்",
+    "Tasks" : "கடமைகள்",
+    "Can edit" : "Can edit",
+    "Edit" : "தொகுக்க",
+    "Copied" : "நகலெடுக்கப்பட்டது",
+    "Cannot copy" : "நகலெடுக்க முடியாது",
+    "Export" : "ஏற்றுமதி",
+    "Delete" : "நீக்குக",
+    "Unshare" : "பகிரப்படாதது",
+    "Name" : "பெயர்",
+    "Restore" : "மீட்டெடு",
+    "Delete permanently" : "நிரந்தரமாக நீக்கவும்",
+    "Cancel" : "இரத்து செய்க",
+    "Close" : "மூடுக",
+    "Details" : "விவரங்கள்",
+    "Notes" : "குறிப்புகள்",
+    "Repeat" : "மீண்டும்"
+},
+"nplurals=2; plural=(n != 1);");

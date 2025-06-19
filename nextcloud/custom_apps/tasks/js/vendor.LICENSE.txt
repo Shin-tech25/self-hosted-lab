@@ -1,0 +1,277 @@
+Included dependencies:
+
+@floating-ui/core
+version: 1.6.7
+license: MIT
+
+@floating-ui/dom
+version: 1.1.1
+license: MIT
+
+@floating-ui/utils
+version: 0.2.7
+license: MIT
+
+@nextcloud/auth
+version: 2.4.0
+license: GPL-3.0-or-later
+
+@nextcloud/axios
+version: 2.5.0
+license: GPL-3.0
+
+@nextcloud/browser-storage
+version: 0.4.0
+license: GPL-3.0-or-later
+
+@nextcloud/calendar-js
+version: 8.0.0
+license: AGPL-3.0-or-later
+
+@nextcloud/capabilities
+version: 1.2.0
+license: GPL-3.0-or-later
+
+@nextcloud/cdav-library
+version: 1.5.1
+license: AGPL-3.0
+
+@nextcloud/dialogs
+version: 4.1.0
+license: GPL-3.0-or-later
+
+@nextcloud/event-bus
+version: 3.3.1
+license: GPL-3.0-or-later
+
+@nextcloud/initial-state
+version: 2.2.0
+license: GPL-3.0-or-later
+
+@nextcloud/l10n
+version: 2.2.0
+license: GPL-3.0-or-later
+
+@nextcloud/logger
+version: 3.0.2
+license: GPL-3.0-or-later
+
+@nextcloud/moment
+version: 1.3.1
+license: GPL-3.0-or-later
+
+@nextcloud/router
+version: 2.2.1
+license: GPL-3.0-or-later
+
+@nextcloud/timezones
+version: 0.1.1
+license: AGPL-3.0-or-later
+
+@nextcloud/vue
+version: 9.0.0-alpha.5
+license: AGPL-3.0-or-later
+
+@vue/devtools-api
+version: 6.6.3
+license: MIT
+
+@vue/reactivity
+version: 3.4.38
+license: MIT
+
+@vue/runtime-core
+version: 3.4.38
+license: MIT
+
+@vue/runtime-dom
+version: 3.4.38
+license: MIT
+
+@vue/shared
+version: 3.4.38
+license: MIT
+
+@vueuse/components
+version: 11.0.0
+license: MIT
+
+@vueuse/core
+version: 10.11.1
+license: MIT
+
+@vueuse/shared
+version: 11.0.0
+license: MIT
+
+axios
+version: 1.7.4
+license: MIT
+
+charenc
+version: 0.0.2
+license: BSD-3-Clause
+
+color-convert
+version: 2.0.1
+license: MIT
+
+color-name
+version: 1.1.4
+license: MIT
+
+core-js
+version: 3.37.0
+license: MIT
+
+crypt
+version: 0.0.2
+license: BSD-3-Clause
+
+date-format-parse
+version: 0.2.7
+license: MIT
+
+debounce
+version: 2.1.0
+license: MIT
+
+dompurify
+version: 3.1.6
+license: (MPL-2.0 OR Apache-2.0)
+
+entities
+version: 4.5.0
+license: BSD-2-Clause
+
+escape-html
+version: 1.0.3
+license: MIT
+
+floating-vue
+version: 5.2.2
+license: MIT
+
+focus-trap
+version: 7.5.4
+license: MIT
+
+ical.js
+version: 2.0.1
+license: MPL-2.0
+
+is-buffer
+version: 1.1.6
+license: MIT
+
+linkify-it
+version: 5.0.0
+license: MIT
+
+linkify-string
+version: 4.1.3
+license: MIT
+
+linkifyjs
+version: 4.1.3
+license: MIT
+
+lodash.get
+version: 4.4.2
+license: MIT
+
+markdown-it
+version: 14.1.0
+license: MIT
+
+markdown-it-emoji
+version: 3.0.0
+license: MIT
+
+markdown-it-link-attributes
+version: 4.0.1
+license: MIT
+
+markdown-it-task-lists
+version: 2.1.1
+license: ISC
+
+md5
+version: 2.3.0
+license: BSD-3-Clause
+
+mdurl
+version: 2.0.0
+license: MIT
+
+moment
+version: 2.30.1
+license: MIT
+
+node-gettext
+version: 3.0.0
+license: (MIT)
+
+punycode.js
+version: 2.3.1
+license: MIT
+
+semver
+version: 7.6.3
+license: ISC
+
+sortablejs
+version: 1.15.2
+license: MIT
+
+sortablejs-vue3
+version: 1.2.11
+license: MIT
+
+splitpanes
+version: 3.1.5
+license: MIT
+
+striptags
+version: 3.2.0
+license: MIT
+
+tabbable
+version: 6.2.0
+license: MIT
+
+toastify-js
+version: 1.12.0
+license: MIT
+
+uc.micro
+version: 2.1.0
+license: MIT
+
+uuid
+version: 10.0.0
+license: MIT
+
+vite-plugin-node-polyfills
+version: 0.22.0
+license: MIT
+
+vue-datepicker-next
+version: 1.0.3
+license: MIT
+
+vue-material-design-icons
+version: 5.3.0
+license: MIT
+
+vue-router
+version: 4.4.3
+license: MIT
+
+vue-select
+version: 4.0.0-beta.6
+license: MIT
+
+vuex
+version: 4.1.0
+license: MIT
