@@ -197,17 +197,17 @@
         },
         {
             "name": "fivefilters/readability.php",
-            "version": "v3.3.2",
-            "version_normalized": "3.3.2.0",
+            "version": "v3.3.3",
+            "version_normalized": "3.3.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fivefilters/readability.php.git",
-                "reference": "2cd2d3d7b24d3df9cc1dcb8919451876c693d69b"
+                "reference": "e2ee7b9e49eae89ac7ed2c74b15718100a73b4c8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fivefilters/readability.php/zipball/2cd2d3d7b24d3df9cc1dcb8919451876c693d69b",
-                "reference": "2cd2d3d7b24d3df9cc1dcb8919451876c693d69b",
+                "url": "https://api.github.com/repos/fivefilters/readability.php/zipball/e2ee7b9e49eae89ac7ed2c74b15718100a73b4c8",
+                "reference": "e2ee7b9e49eae89ac7ed2c74b15718100a73b4c8",
                 "shasum": ""
             },
             "require": {
@@ -226,7 +226,7 @@
             "suggest": {
                 "monolog/monolog": "Allow logging debug information"
             },
-            "time": "2025-03-07T18:17:00+00:00",
+            "time": "2025-04-26T23:45:37+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -259,23 +259,23 @@
             ],
             "support": {
                 "issues": "https://github.com/fivefilters/readability.php/issues",
-                "source": "https://github.com/fivefilters/readability.php/tree/v3.3.2"
+                "source": "https://github.com/fivefilters/readability.php/tree/v3.3.3"
             },
             "install-path": "../fivefilters/readability.php"
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "2.7.0",
-            "version_normalized": "2.7.0.0",
+            "version": "2.7.1",
+            "version_normalized": "2.7.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "a70f5c95fb43bc83f07c9c948baa0dc1829bf201"
+                "reference": "c2270caaabe631b3b44c85f99e5a04bbb8060d16"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/a70f5c95fb43bc83f07c9c948baa0dc1829bf201",
-                "reference": "a70f5c95fb43bc83f07c9c948baa0dc1829bf201",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/c2270caaabe631b3b44c85f99e5a04bbb8060d16",
+                "reference": "c2270caaabe631b3b44c85f99e5a04bbb8060d16",
                 "shasum": ""
             },
             "require": {
@@ -296,7 +296,7 @@
             "suggest": {
                 "laminas/laminas-httphandlerrunner": "Emit PSR-7 responses"
             },
-            "time": "2024-07-18T11:15:46+00:00",
+            "time": "2025-03-27T12:30:47+00:00",
             "type": "library",
             "extra": {
                 "bamarni-bin": {
@@ -364,7 +364,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/2.7.0"
+                "source": "https://github.com/guzzle/psr7/tree/2.7.1"
             },
             "funding": [
                 {

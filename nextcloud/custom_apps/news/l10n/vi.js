@@ -33,7 +33,6 @@ OC.L10N.register(
     "Next" : "Tiếp theo",
     "Mark unread" : "Đánh dấu là chưa đọc",
     "by" : "bởi",
-    "from" : "từ",
     "Open website" : "Mở trang web",
     "Not available" : "Không khả dụng",
     "Title" : "Tên",
@@ -42,16 +41,6 @@ OC.L10N.register(
     "right" : "phải",
     "left" : "trái",
     "Refresh" : "Làm mới",
-    "Shift" : "Shift",
-    "Description" : "Mô tả",
-    "Folder" : "Thư mục",
-    "Go back" : "Quay lại",
-    "Create" : "Tạo",
-    "Dismiss" : "Bỏ qua",
-    "Collapse" : "Thu gọn",
-    "Import" : "Nhập vào",
-    "Export" : "Xuất ra",
-    "Help" : "Giúp đỡ",
-    "Report a bug" : "Báo cáo lỗi"
+    "Shift" : "Shift"
 },
 "nplurals=1; plural=0;");

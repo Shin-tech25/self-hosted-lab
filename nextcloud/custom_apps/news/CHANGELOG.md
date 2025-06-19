@@ -5,12 +5,65 @@ The format is mostly based on [Keep a Changelog](https://keepachangelog.com/en/1
 You can also check [on GitHub](https://github.com/nextcloud/news/releases), the release notes there are generated automatically and include every pull request.
 
 # Unreleased
-## [25.x.x]
+## [26.x.x]
 ### Changed
 
 ### Fixed
 
 # Releases
+## [26.0.1] - 2025-06-04
+### Changed
+- enable title scrolling in compact mode on mobile only (#3205)
+
+### Fixed
+- prevent incorrect "mark read on scroll" behavior after route change (#3206)
+
+## [26.0.0] - 2025-05-29
+### Fixed
+- content splitter position not recognized when reloading app (#3193)
+- feed/folder action menu does not close when clicked outside (#3193)
+- fix feed url in details view (#3193)
+
+## [26.0.0-beta.5] - 2025-05-23
+### Changed
+- show intro and date if enough space in compact mode (#3186)
+
+### Fixed
+- since `26.0.0-beta.4` the first selected item can disappear from the list if you change from another type of route, e.g. from feed to folder (#3178)
+
+## [26.0.0-beta.4] - 2025-05-17
+### Changed
+- Open the feed info table during opml import to show what has been imported after completion (#3169)
+
+### Fixed
+- Wrong or none items in list after switching feed or folder (#3168)
+- opml import/export not working after vue router changes (#3169)
+
+## [26.0.0-beta.3] - 2025-05-13
+### Changed
+- Migrate frontend to Vue3 (#3163)
+- Migrate from webpack to vite (#3163)
+- Migrate from jest to vitest (#3163)
+
+### Fixed
+- subscribe_to URL path has changed (#3159)
+- change update mode menu text and icon in feed action menu (#3163)
+
+## [26.0.0-beta.2] - 2025-05-06
+### Fixed
+-  Item list not updated by automatic or manual refresh (#3155)
+
+## [26.0.0-beta.1] - 2025-05-02
+### Changed
+- Drop support for Nextcloud 29 (#3146)
+
+### Fixed
+- respect global `disable all keyboard shortcuts` setting (#3142)
+- disable shortcuts in input fields from global overlays (e.g. Nextcloud assistant) (#3142)
+- fix relative date strings (#3149)
+- Switching between folders in compact mode doesn't close actual selected item (#3150)
+- current selected article is removed from the list after showing details in mobile mode (#3150)
+
 ## [25.3.1] - 2025-03-25
 ### Changed
 - Sort feeds case-insensitive (#3125)

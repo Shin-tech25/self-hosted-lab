@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => '__root__',
-        'pretty_version' => '25.3.1',
-        'version' => '25.3.1.0',
-        'reference' => '59caefb5bcc2038e6b2f9f328af9b9fecade1bc5',
+        'pretty_version' => '26.0.1',
+        'version' => '26.0.1.0',
+        'reference' => 'a4049b4298c72985ab1938738097cd92cf5a02ab',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         '__root__' => array(
-            'pretty_version' => '25.3.1',
-            'version' => '25.3.1.0',
-            'reference' => '59caefb5bcc2038e6b2f9f328af9b9fecade1bc5',
+            'pretty_version' => '26.0.1',
+            'version' => '26.0.1.0',
+            'reference' => 'a4049b4298c72985ab1938738097cd92cf5a02ab',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
@@ -47,9 +47,9 @@
             'dev_requirement' => false,
         ),
         'fivefilters/readability.php' => array(
-            'pretty_version' => 'v3.3.2',
-            'version' => '3.3.2.0',
-            'reference' => '2cd2d3d7b24d3df9cc1dcb8919451876c693d69b',
+            'pretty_version' => 'v3.3.3',
+            'version' => '3.3.3.0',
+            'reference' => 'e2ee7b9e49eae89ac7ed2c74b15718100a73b4c8',
             'type' => 'library',
             'install_path' => __DIR__ . '/../fivefilters/readability.php',
             'aliases' => array(),
@@ -62,9 +62,9 @@
             ),
         ),
         'guzzlehttp/psr7' => array(
-            'pretty_version' => '2.7.0',
-            'version' => '2.7.0.0',
-            'reference' => 'a70f5c95fb43bc83f07c9c948baa0dc1829bf201',
+            'pretty_version' => '2.7.1',
+            'version' => '2.7.1.0',
+            'reference' => 'c2270caaabe631b3b44c85f99e5a04bbb8060d16',
             'type' => 'library',
             'install_path' => __DIR__ . '/../guzzlehttp/psr7',
             'aliases' => array(),

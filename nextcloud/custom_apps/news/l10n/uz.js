@@ -1,7 +1,6 @@
 OC.L10N.register(
     "news",
     {
-    "Request failed, network connection unavailable!" : "Request failed, network connection unavailable!",
     "Download" : "Download",
     "Close" : "Close",
     "Folder name" : "Folder name",
@@ -12,21 +11,17 @@ OC.L10N.register(
     "Subscribe" : "Obuna boʻlish",
     "Move" : "Move",
     "Share" : "Ulashish",
+    "Off" : "Oʻchirilgan",
     "Settings" : "Settings",
     "Documentation" : "Hujjatlar",
     "Rename" : "Rename",
     "Delete" : "Delete",
     "Previous" : "Oldingi",
+    "Next" : "Keyingisi",
     "Not available" : "Mavjud emas",
     "Title" : "Sarlavha",
     "right" : "right",
     "left" : "left",
-    "Refresh" : "Refresh",
-    "Description" : "Tavsif",
-    "Create" : "Yaratish",
-    "Dismiss" : "Dismiss",
-    "Import" : "Import",
-    "Export" : "Eksport",
-    "Help" : "Help"
+    "Refresh" : "Refresh"
 },
 "nplurals=1; plural=0;");

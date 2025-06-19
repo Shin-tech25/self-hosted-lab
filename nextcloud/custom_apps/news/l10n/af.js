@@ -26,7 +26,6 @@ OC.L10N.register(
     "Oldest first" : "Oudste eerste",
     "Previous" : "Vorige",
     "by" : "deur",
-    "from" : "van",
     "Play audio" : "Speel oudio af",
     "Download audio" : "Laai oudio af",
     "Download video" : "Laai video af",
@@ -35,18 +34,6 @@ OC.L10N.register(
     "Jump to previous article" : "Spring na vorige artikel",
     "right" : "regs",
     "left" : "links",
-    "Refresh" : "Verfris",
-    "Description" : "Beskrywing",
-    "Folder" : "Vouer",
-    "Go back" : "Gaan terug",
-    "New Folder" : "Nuwe Vouer",
-    "Create" : "Skep",
-    "Menu" : "Kieslys",
-    "Dismiss" : "Wys Af",
-    "Collapse" : "Vou In",
-    "Deleted folder" : "Geskrapte vouer",
-    "Import" : "Voer In",
-    "Export" : "Stuur Uit",
-    "Help" : "Hulp"
+    "Refresh" : "Verfris"
 },
 "nplurals=2; plural=(n != 1);");
