@@ -97,4 +97,10 @@ $CONFIG = array (
   'defaultapp' => 'files',
   'maintenance' => false,
   'loglevel' => 2,
+  'memories.exiftool' => '/var/www/html/custom_apps/memories/bin-ext/e
+xiftool-amd64-glibc',
+  'memories.vod.path' => '/var/www/html/custom_apps/memories/bin-ext/g
+o-vod-amd64',
+  'memories.vod.ffmpeg' => '/usr/bin/ffmpeg',
+  'memories.vod.ffprobe' => '/usr/bin/ffprobe',
 );
