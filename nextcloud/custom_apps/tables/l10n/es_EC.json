@@ -222,6 +222,8 @@
     "Receiver type" : "Tipo de receptor",
     "Create time" : "Hora de creación",
     "Share ID" : "ID de recurso compartido",
+    "Copy internal link to clipboard" : "Copiar enlace interno al portapapeles",
+    "Internal link" : "Enlace interno",
     "group" : "grupo",
     "Permissions" : "Permisos",
     "Read data" : "Leer datos",

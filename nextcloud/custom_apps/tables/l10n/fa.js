@@ -282,6 +282,8 @@ OC.L10N.register(
     "Receiver type" : "Receiver type",
     "Create time" : "Create time",
     "Share ID" : "Share ID",
+    "Copy internal link to clipboard" : "Copy internal link to clipboard",
+    "Internal link" : "پیوند داخلی",
     "group" : "گروه",
     "Table manager" : "Table manager",
     "Permissions" : "مجوزها",

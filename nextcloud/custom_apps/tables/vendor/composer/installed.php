@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'nextcloud/tables',
-        'pretty_version' => 'v0.9.3',
-        'version' => '0.9.3.0',
-        'reference' => 'e33e28a239d8c4bbed12f73c9edd002e0cfe85bc',
+        'pretty_version' => 'v0.9.4',
+        'version' => '0.9.4.0',
+        'reference' => '7aefa59293b144ce242ff2a2340ff654b7361870',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -65,9 +65,9 @@
             'dev_requirement' => false,
         ),
         'nextcloud/tables' => array(
-            'pretty_version' => 'v0.9.3',
-            'version' => '0.9.3.0',
-            'reference' => 'e33e28a239d8c4bbed12f73c9edd002e0cfe85bc',
+            'pretty_version' => 'v0.9.4',
+            'version' => '0.9.4.0',
+            'reference' => '7aefa59293b144ce242ff2a2340ff654b7361870',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

@@ -183,6 +183,8 @@ OC.L10N.register(
     "Favorites" : "Favoritos",
     "Archived tables" : "Tables archivaes",
     "No recommendations. Start typing." : "Nun hai nenguna recomendación. Comienza a escribir",
+    "Copy internal link to clipboard" : "Copiar l'enllaz internu nel cartafueyu",
+    "Internal link" : "Enllaz internu",
     "group" : "pugru",
     "Permissions" : "Permisos",
     "Create data" : "Crear los datos",

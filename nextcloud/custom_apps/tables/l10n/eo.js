@@ -57,6 +57,7 @@ OC.L10N.register(
     "Remove from favorites" : "Malpliŝatigi",
     "Favorites" : "Plej ŝatataj",
     "No recommendations. Start typing." : "Neniu propono. Ektajpu.",
+    "Internal link" : "Interna ligilo",
     "group" : "grupo",
     "No shares" : "Neniu kunhavo",
     "Created at" : "Kreita je",

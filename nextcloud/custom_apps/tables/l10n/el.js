@@ -309,6 +309,8 @@ OC.L10N.register(
     "Share with accounts or groups" : "Κοινή χρήση με χρήστες ή ομάδες",
     "No recommendations. Start typing." : "Δεν υπάρχουν συστάσεις. Αρχίστε να πληκτρολογείτε.",
     "Receiver type" : "Τύπος αποδέκτη",
+    "Copy internal link to clipboard" : "Αντιγραφή εσωτερικού συνδέσμου στο πρόχειρο",
+    "Internal link" : "Εσωτερικός σύνδεσμος",
     "group" : "ομάδα",
     "Table manager" : "Διαχειριστής πίνακα",
     "Permissions" : "Δικαιώματα",

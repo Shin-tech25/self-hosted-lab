@@ -352,6 +352,8 @@ OC.L10N.register(
     "Receiver type" : "قوبۇللىغۇچ تىپى",
     "Create time" : "ۋاقىت قۇر",
     "Share ID" : "كىملىكنى ئورتاقلىشىش",
+    "Copy internal link to clipboard" : "ئىچكى ئۇلىنىشنى چاپلاش تاختىسىغا كۆچۈرۈڭ",
+    "Internal link" : "ئىچكى ئۇلىنىش",
     "group" : "گۇرۇپپا",
     "Table manager" : "جەدۋەل باشقۇرغۇچى",
     "Permissions" : "ئىجازەت",

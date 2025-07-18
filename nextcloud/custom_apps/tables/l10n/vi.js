@@ -153,6 +153,8 @@ OC.L10N.register(
     "Favorites" : "Ưa thích",
     "Clear filter" : "Xóa bộ lọc",
     "No recommendations. Start typing." : "Không có khuyến nghị. Bắt đầu gõ.",
+    "Copy internal link to clipboard" : "Sao chép liên kết nội bộ vào bộ nhớ tạm",
+    "Internal link" : "Liên kết nội bộ",
     "group" : "nhóm",
     "Delete data" : "Xóa dữ liệu",
     "No shares" : "Không có lượt chia sẻ",

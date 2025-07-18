@@ -371,6 +371,8 @@ OC.L10N.register(
     "Receiver type" : "Тип отримувача",
     "Create time" : "Час створення",
     "Share ID" : "Ідентифікатор спільного  ресурсу",
+    "Copy internal link to clipboard" : "Копіювати внутрішнє посилання до буферу обміну",
+    "Internal link" : "Внутрішнє посилання",
     "group" : "група",
     "team" : "команда",
     "Table manager" : "Адміністратор таблиці",

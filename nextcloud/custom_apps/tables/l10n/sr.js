@@ -374,6 +374,8 @@ OC.L10N.register(
     "Receiver type" : "Тип примаоца",
     "Create time" : "Време креирања",
     "Share ID" : "ID дељења",
+    "Copy internal link to clipboard" : "Копирај интерни линк у клипборд",
+    "Internal link" : "Интерна веза",
     "Any application created by a demoted share recipients using a shared table will continue to consume its data." : "Било која апликација коју креирају примаоци деградираног дељења која користи дељену табелу ће наставити да користи њене податке.",
     "group" : "група",
     "team" : "тим",

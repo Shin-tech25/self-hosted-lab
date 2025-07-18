@@ -66,6 +66,8 @@ OC.L10N.register(
     "Favorites" : "Favorites",
     "Clear filter" : "Clear filter",
     "No recommendations. Start typing." : "No recommendations. Start typing.",
+    "Copy internal link to clipboard" : "Copy internal link to clipboard",
+    "Internal link" : "Internal link",
     "group" : "group",
     "Permissions" : "Permissions",
     "No shares" : "No shares",

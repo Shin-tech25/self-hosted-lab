@@ -277,6 +277,8 @@
     "Receiver type" : "수신자 유형",
     "Create time" : "생성 시간",
     "Share ID" : "공유 ID",
+    "Copy internal link to clipboard" : "내부 링크를 클립보드에 복사",
+    "Internal link" : "내부 링크",
     "group" : "그룹",
     "Table manager" : "표 관리자",
     "Permissions" : "권한",

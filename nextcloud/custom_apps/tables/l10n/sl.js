@@ -262,6 +262,8 @@ OC.L10N.register(
     "Receiver type" : "Vrsta prejemnika",
     "Create time" : "Čas ustvarjanja",
     "Share ID" : "ID souporabe",
+    "Copy internal link to clipboard" : "Kopiraj notranjo povezavo v odložišče",
+    "Internal link" : "Notranja povezava",
     "group" : "skupina",
     "Permissions" : "Dovoljenja",
     "Read data" : "Preberi podatke",

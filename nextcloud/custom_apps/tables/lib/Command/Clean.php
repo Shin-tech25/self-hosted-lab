@@ -97,7 +97,7 @@ class Clean extends Command {
 				return;
 			}
 			$tableId = $this->rowMapper->getTableIdForRow($nextRowId);
-			$columns = $this->columnService->findAllByTable($tableId, null, '');
+			$columns = $this->columnService->findAllByTable($tableId, '');
 			$this->row = $this->rowMapper->find($nextRowId, $columns);
 			$this->offset = $this->row->getId();
 		} catch (Exception $e) {
@@ -178,7 +178,7 @@ class Clean extends Command {
 		$this->row->setData(array_values($data));
 
 		try {
-			$this->rowMapper->update($this->row, $this->columnService->findAllByTable($this->row->getTableId()));
+			$this->rowMapper->update($this->row);
 			$this->print('Row successfully updated', self::PRINT_LEVEL_SUCCESS);
 		} catch (InternalError|PermissionError $e) {
 			$this->print('Error while updating row to db.', self::PRINT_LEVEL_ERROR);

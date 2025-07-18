@@ -75,7 +75,9 @@ class RowService extends SuperService {
 		try {
 			if ($this->permissionsService->canReadRowsByElementId($tableId, 'table', $userId)) {
 				$tableColumns = $this->columnMapper->findAllByTable($tableId);
-				return $this->row2Mapper->findAll($tableColumns, $tableColumns, $tableId, $limit, $offset, null, null, $userId);
+				$showColumnIds = array_map(fn (Column $column) => $column->getId(), $tableColumns);
+
+				return $this->row2Mapper->findAll($showColumnIds, $tableId, $limit, $offset, null, null, $userId);
 			} else {
 				throw new PermissionError('no read access to table id = ' . $tableId);
 			}
@@ -100,11 +102,8 @@ class RowService extends SuperService {
 		try {
 			if ($this->permissionsService->canReadRowsByElementId($viewId, 'view', $userId)) {
 				$view = $this->viewMapper->find($viewId);
-				$columnsArray = $view->getColumnsArray();
-				$filterColumns = $this->columnMapper->findAll($columnsArray);
-				$tableColumns = $this->columnMapper->findAllByTable($view->getTableId());
 
-				return $this->row2Mapper->findAll($tableColumns, $filterColumns, $view->getTableId(), $limit, $offset, $view->getFilterArray(), $view->getSortArray(), $userId);
+				return $this->row2Mapper->findAll($view->getColumnIds(), $view->getTableId(), $limit, $offset, $view->getFilterArray(), $view->getSortArray(), $userId);
 			} else {
 				throw new PermissionError('no read access to view id = ' . $viewId);
 			}
@@ -116,33 +115,28 @@ class RowService extends SuperService {
 
 
 	/**
-	 * @param int $id
+	 * @param int $rowId
 	 * @return Row2
 	 * @throws InternalError
 	 * @throws NotFoundError
 	 * @throws PermissionError
 	 */
-	public function find(int $id): Row2 {
+	public function find(int $rowId): Row2 {
 		try {
-			$columns = $this->columnMapper->findAllByTable($id);
-		} catch (Exception $e) {
+			$tableId = $this->row2Mapper->getTableIdForRow($rowId);
+
+			if (!$this->permissionsService->canReadRowsByElementId($tableId, 'table')) {
+				throw new PermissionError('PermissionError: can not read row with id ' . $rowId);
+			}
+
+			$columns = $this->columnMapper->findAllByTable($tableId);
+			$row = $this->row2Mapper->find($rowId, $columns);
+		} catch (Exception|MultipleObjectsReturnedException $e) {
 			$this->logger->error($e->getMessage(), ['exception' => $e]);
 			throw new InternalError(get_class($this) . ' - ' . __FUNCTION__ . ': ' . $e->getMessage());
-		}
-
-		try {
-			$row = $this->row2Mapper->find($id, $columns);
-		} catch (InternalError $e) {
-			$this->logger->error($e->getMessage(), ['exception' => $e]);
-			throw new InternalError(get_class($this) . ' - ' . __FUNCTION__ . ': ' . $e->getMessage(), $e->getCode(), $e);
-		} catch (NotFoundError $e) {
+		} catch (NotFoundError|DoesNotExistException $e) {
 			$this->logger->error($e->getMessage(), ['exception' => $e]);
 			throw new NotFoundError(get_class($this) . ' - ' . __FUNCTION__ . ': ' . $e->getMessage());
-		}
-
-		// security
-		if (!$this->permissionsService->canReadRowsByElementId($row->getTableId(), 'table')) {
-			throw new PermissionError('PermissionError: can not read row with id ' . $id);
 		}
 
 		return $row;
@@ -184,7 +178,7 @@ class RowService extends SuperService {
 				throw new PermissionError('create row at the view id = ' . $viewId . ' is not allowed.');
 			}
 
-			$columns = $this->columnMapper->findMultiple($view->getColumnsArray());
+			$columns = $this->columnMapper->findAll($view->getColumnIds());
 		}
 		if ($tableId) {
 			try {
@@ -218,7 +212,7 @@ class RowService extends SuperService {
 		$row2->setTableId($tableId);
 		$row2->setData($data);
 		try {
-			$insertedRow = $this->row2Mapper->insert($row2, $this->columnMapper->findAllByTable($tableId));
+			$insertedRow = $this->row2Mapper->insert($row2);
 
 			$this->eventDispatcher->dispatchTyped(new RowAddedEvent($insertedRow));
 
@@ -257,7 +251,7 @@ class RowService extends SuperService {
 				}
 
 				// Skip if the column is already visible in the view
-				if (in_array($filter['columnId'], $view->getColumnsArray())) {
+				if (in_array($filter['columnId'], $view->getColumnIds())) {
 					continue;
 				}
 
@@ -432,7 +426,7 @@ class RowService extends SuperService {
 
 			// fetch all needed columns
 			try {
-				$columns = $this->columnMapper->findMultiple($view->getColumnsArray());
+				$columns = $this->columnMapper->findAll($view->getColumnIds());
 			} catch (Exception $e) {
 				$this->logger->error($e->getMessage(), ['exception' => $e]);
 				throw new InternalError(get_class($this) . ' - ' . __FUNCTION__ . ': ' . $e->getMessage());
@@ -474,7 +468,7 @@ class RowService extends SuperService {
 			}
 		}
 
-		$updatedRow = $this->row2Mapper->update($item, $columns);
+		$updatedRow = $this->row2Mapper->update($item);
 
 		$this->eventDispatcher->dispatchTyped(new RowUpdatedEvent($updatedRow, $previousData));
 
@@ -610,7 +604,7 @@ class RowService extends SuperService {
 	public function getViewRowsCount(View $view, string $userId): int {
 		if ($this->permissionsService->canReadRowsByElementId($view->getId(), 'view', $userId)) {
 			try {
-				return $this->row2Mapper->countRowsForView($view, $userId, $this->columnMapper->findAllByTable($view->getTableId()));
+				return $this->row2Mapper->countRowsForView($view, $userId);
 			} catch (Exception $e) {
 				$this->logger->error($e->getMessage(), ['exception' => $e]);
 				return 0;
@@ -625,7 +619,7 @@ class RowService extends SuperService {
 			return $row;
 		}
 
-		$row->filterDataByColumns($view->getColumnsArray());
+		$row->filterDataByColumns($view->getColumnIds());
 
 		return $row;
 	}

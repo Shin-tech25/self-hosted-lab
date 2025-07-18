@@ -357,6 +357,8 @@ OC.L10N.register(
     "No recommendations. Start typing." : "Ei suosituksia. Aloita kirjoittaminen.",
     "Create time" : "Luontiaika",
     "Share ID" : "Jaon ID",
+    "Copy internal link to clipboard" : "Kopioi sisäinen linkki leikepöydälle",
+    "Internal link" : "Sisäinen linkki",
     "group" : "ryhmä",
     "team" : "tiimi",
     "Table manager" : "Taulukon hallinta",

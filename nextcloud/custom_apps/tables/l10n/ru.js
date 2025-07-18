@@ -251,6 +251,8 @@ OC.L10N.register(
     "Failed to fetch share recommendations" : "Не удалось получить рекомендации по обмену",
     "No recommendations. Start typing." : "Начните вводить имя...",
     "Create time" : "Время создания",
+    "Copy internal link to clipboard" : "Скопировать внутреннюю ссылку в буфер обмена",
+    "Internal link" : "Внутренняя ссылка",
     "group" : "группа",
     "Table manager" : "Менеджер таблиц",
     "Permissions" : "Права доступа",

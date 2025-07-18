@@ -117,6 +117,8 @@ OC.L10N.register(
     "Favorites" : "Mėgstami",
     "Clear filter" : "Išvalyti filtrą",
     "No recommendations. Start typing." : "Rekomendacijų nėra. Pradėkite rašyti.",
+    "Copy internal link to clipboard" : "Kopijuoti vidinę nuorodą į iškarpinę",
+    "Internal link" : "Vidinė nuoroda",
     "group" : "grupė",
     "Permissions" : "Leidimai",
     "No shares" : "Nėra jokių viešinių",

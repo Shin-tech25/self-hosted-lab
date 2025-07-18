@@ -10,7 +10,6 @@ namespace OCA\Tables\Db;
 use JsonSerializable;
 use OCA\Tables\Model\Permissions;
 use OCA\Tables\ResponseDefinitions;
-use OCP\AppFramework\Db\Entity;
 
 /**
  * @psalm-suppress PropertyNotSetInConstructor
@@ -25,6 +24,8 @@ use OCP\AppFramework\Db\Entity;
  * @method setTableId(int $tableId)
  * @method getColumns(): string
  * @method setColumns(string $columns)
+ * @method getColumnSettings(): string
+ * @method setColumnSettings(string $columnSettings)
  * @method getCreatedBy(): string
  * @method setCreatedBy(string $createdBy)
  * @method getCreatedAt(): string
@@ -53,8 +54,10 @@ use OCP\AppFramework\Db\Entity;
  * @method setSort(string $sort)
  * @method getOwnerDisplayName(): string
  * @method setOwnerDisplayName(string $ownerDisplayName)
+ * @method getOwnership(): ?string
+ * @method setOwnership(string $ownership)
  */
-class View extends Entity implements JsonSerializable {
+class View extends EntitySuper implements JsonSerializable {
 	protected ?string $title = null;
 	protected ?int $tableId = null;
 	protected ?string $createdBy = null;
@@ -66,6 +69,8 @@ class View extends Entity implements JsonSerializable {
 	protected ?string $columns = null; // json
 	protected ?string $sort = null; // json
 	protected ?string $filter = null; // json
+
+	// virtual properties
 	protected ?bool $isShared = null;
 	protected ?Permissions $onSharePermissions = null;
 	protected ?bool $hasShares = false;
@@ -73,6 +78,8 @@ class View extends Entity implements JsonSerializable {
 	protected ?int $rowsCount = 0;
 	protected ?string $ownership = null;
 	protected ?string $ownerDisplayName = null;
+
+	protected const VIRTUAL_PROPERTIES = ['isShared', 'onSharePermissions', 'hasShares', 'favorite', 'rowsCount', 'ownership', 'ownerDisplayName'];
 
 	public function __construct() {
 		$this->addType('id', 'integer');
@@ -84,7 +91,35 @@ class View extends Entity implements JsonSerializable {
 	 * @return int[]
 	 */
 	public function getColumnsArray(): array {
-		return $this->getArray($this->getColumns());
+
+		$columnSettings = $this->getColumnsSettingsArray();
+		usort($columnSettings, function ($a, $b) {
+			return $a['order'] - $b['order'];
+		});
+		return array_column($columnSettings, 'columnId');
+	}
+
+	/**
+	 * @return array<array{columnId: int, order: int}>
+	 */
+	public function getColumnsSettingsArray(): array {
+		$columns = $this->getArray($this->getColumns());
+		if (empty($columns)) {
+			return [];
+		}
+
+		if (is_array(reset($columns))) {
+			return $columns;
+		}
+
+		$result = [];
+		foreach ($columns as $index => $columnId) {
+			$result[] = [
+				'columnId' => $columnId,
+				'order' => (int)$index + 1
+			];
+		}
+		return $result;
 	}
 
 	/**
@@ -125,6 +160,10 @@ class View extends Entity implements JsonSerializable {
 		$this->setColumns(\json_encode($array));
 	}
 
+	public function setColumnsSettingsArray(array $array): void {
+		$this->setColumnSettings(\json_encode($array));
+	}
+
 	public function setSortArray(array $array):void {
 		$this->setSort(\json_encode($array));
 	}
@@ -135,14 +174,6 @@ class View extends Entity implements JsonSerializable {
 
 	private function getSharePermissions(): ?Permissions {
 		return $this->getOnSharePermissions();
-	}
-
-	public function getOwnership(): ?string {
-		return $this->ownership;
-	}
-
-	public function setOwnership(string $ownership): void {
-		$this->ownership = $ownership;
 	}
 
 	/**
@@ -161,6 +192,7 @@ class View extends Entity implements JsonSerializable {
 			'lastEditBy' => $this->lastEditBy ?: '',
 			'lastEditAt' => $this->lastEditAt ?: '',
 			'columns' => $this->getColumnsArray(),
+			'columnSettings' => $this->getColumnsSettingsArray(),
 			'sort' => $this->getSortArray(),
 			'isShared' => (bool)$this->isShared,
 			'favorite' => $this->favorite,
@@ -172,5 +204,13 @@ class View extends Entity implements JsonSerializable {
 		$serialisedJson['filter'] = $this->getFilterArray();
 
 		return $serialisedJson;
+	}
+
+	/**
+	 * @psalm-suppress MismatchingDocblockReturnType
+	 * @return int[]
+	 */
+	public function getColumnIds(): array {
+		return array_column($this->getColumnsSettingsArray(), 'columnId');
 	}
 }

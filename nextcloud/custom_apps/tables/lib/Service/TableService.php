@@ -404,7 +404,7 @@ class TableService extends SuperService {
 
 		// delete all columns for that table
 		try {
-			$columns = $this->columnService->findAllByTable($id, null, $userId);
+			$columns = $this->columnService->findAllByTable($id, $userId);
 		} catch (InternalError|PermissionError $e) {
 			$this->logger->error($e->getMessage(), ['exception' => $e]);
 			throw new InternalError(get_class($this) . ' - ' . __FUNCTION__ . ': ' . $e->getMessage());
@@ -529,7 +529,7 @@ class TableService extends SuperService {
 		$columns = $this->columnService->findAllByTable($id);
 		$table = $this->find($id);
 		$this->enhanceTable($table, $userId);
-		return new TableScheme($table->getTitle(), $table->getEmoji(), $columns, $table->getViews() ?: [], $table->getDescription(), $this->appManager->getAppVersion('tables'));
+		return new TableScheme($table->getTitle(), $table->getEmoji(), $columns, $table->getViews() ?: [], $table->getDescription() ?: '', $this->appManager->getAppVersion('tables'));
 	}
 
 	// PRIVATE FUNCTIONS ---------------------------------------------------------------

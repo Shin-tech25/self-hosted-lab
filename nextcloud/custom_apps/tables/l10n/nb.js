@@ -355,6 +355,8 @@ OC.L10N.register(
     "Receiver type" : "Type mottaker",
     "Create time" : "Opprett tidspunkt",
     "Share ID" : "Delt ressurs-ID",
+    "Copy internal link to clipboard" : "Kopier intern lenke til utklippstavlen",
+    "Internal link" : "Intern lenke",
     "group" : "gruppe",
     "Table manager" : "Tabell-behandler",
     "Permissions" : "Rettigheter",
