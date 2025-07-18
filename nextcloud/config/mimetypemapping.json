@@ -1,0 +1,23 @@
+{
+    "maps": [
+        "application/x-nextcloud-maps"
+    ],
+    "noindex": [
+        "application/x-nextcloud-noindex"
+    ],
+    "nomedia": [
+        "application/x-nextcloud-nomedia"
+    ],
+    "noimage": [
+        "application/x-nextcloud-noimage"
+    ],
+    "notrack": [
+        "application/x-nextcloud-maps-notrack"
+    ],
+    "drawio": [
+        "application/x-drawio"
+    ],
+    "dwb": [
+        "application/x-drawio-wb"
+    ]
+}
