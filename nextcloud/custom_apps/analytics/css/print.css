@@ -1,0 +1,85 @@
+/**
+ * Analytics
+ *
+ * SPDX-FileCopyrightText: 2019-2022 Marcel Scherello
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+@media print {
+    /* hide stuff */
+    #body-user #header,
+    #body-user div#app-navigation,
+    #body-user #app-navigation-toggle,
+    #body-user #app-navigation-toggle-custom,
+    #body-user #tableContainer_filter,
+    #body-user #tableContainer_length,
+    #body-user #tableContainer_paginate,
+    #body-user #chartZoomReset
+    {
+        display: none !important;
+    }
+
+    #app-content,
+    #content,
+    body {
+        background-color: white !important;
+        background-image: none !important;
+    }
+
+    #body-user #content {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    #body-user #app-content {
+        margin: 0 !important;
+    }
+
+    #body-user #analytics-content {
+        /*padding: 0 80px !important;*/
+    }
+
+    canvas#myChart {
+        min-height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        height: auto !important;
+        width: auto !important;
+    }
+
+    div#app-navigation-toggle.icon-menu {
+        display: block;
+        width: 0;
+        height: 0;
+        background: none;
+    }
+
+    #optionsMenuIcon,
+    #fullscreenToggle,
+    #addFilterIcon,
+    #chartLegend,
+    .dt-length,
+    .dt-search,
+    .dt-info,
+    .dt-paging
+    {
+        display: none;
+    }
+
+    .filterVisualizationItem {
+        background-image: initial !important;
+        padding-left: 5px !important;
+    }
+
+    .filterVisualizationRemove {
+        display: none !important;
+    }
+
+    /* Layout */
+    @page {
+        size: A4 portrait;
+        margin: 20mm 0 10mm 0;
+    }
+}

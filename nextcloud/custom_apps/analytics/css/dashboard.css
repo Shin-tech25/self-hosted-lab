@@ -1,0 +1,113 @@
+/**
+ * Analytics
+ *
+ * SPDX-FileCopyrightText: 2019-2022 Marcel Scherello
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+ .icon-analytics {
+     background-image: url(../img/app-dark.svg);
+     filter: var(--background-invert-if-dark);
+ }
+
+ body.dark .icon-analytics,
+ body.theme--dark .icon-analytics {
+     background-image: url(../img/app.svg);
+     filter: var(--background-invert-if-dark);
+ }
+
+.panel--content .analyticsWidgetItem {
+     height: 60px;
+     width: 100%;
+     padding: 8px;
+     margin-right: 0;
+     border-radius: var(--border-radius-large);
+}
+
+.analyticsWidgetItem:hover,
+.analyticsWidgetItem:focus {
+    background: var(--color-background-hover);
+}
+
+.panel--content .analyticsWidgetContent1 {
+    float: left;
+    width: 70%;
+}
+
+.panel--content .analyticsWidgetContent2 {
+    float: right;
+    width: 30%;
+}
+
+.analyticsWidgetReport {
+    color: var(--color-main-text);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.analyticsWidgetSmall {
+    color: var(--color-text-maxcontrast);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.analyticsWidgetValue {
+    text-align: right;
+    line-height: 45px;
+    font-size: x-large;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
+}
+
+.analyticsWidgetSmallBackup {
+     text-align: right;
+     font-size: x-small;
+     line-height: 10px;
+}
+
+.analyticsWidgetIcon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 154px;
+    height: 100px;
+    margin: 0 auto;
+    background-size: 90px;
+}
+
+.empty-content {
+ 	text-align: center;
+ 	margin-top: 5vh;
+}
+
+.panel--content .chartContainer {
+    width: 80px;
+    height:40px
+}
+
+#analytics-content-intro .analyticsWidgetItem  {
+    height: 170px;
+    width: 170px;
+    padding: 8px;
+    box-shadow: 3px 3px 5px var(--color-background-darker);
+    background-color: var(--color-background-darker);
+    margin: 10px;
+    display: inline-block;
+    vertical-align: top;
+}
+
+#analytics-content-intro .analyticsWidgetContent1 {
+    height: 50px;
+}
+
+#analytics-content-intro .analyticsWidgetContent2 {
+}
+
+#analytics-content-intro .chartContainer {
+    width: 150px;
+    height:100px
+}
