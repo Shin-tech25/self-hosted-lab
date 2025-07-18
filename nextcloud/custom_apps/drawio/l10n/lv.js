@@ -1,0 +1,15 @@
+OC.L10N.register(
+    "drawio",
+    {
+    "You can not open a folder" : "Tu nevari atvērt mapi",
+    "This file is too big to be opened. Please download the file instead." : "Šī datne ir pārāk liela, lai to atvērtu. Lūgums lejupielādēt šo datni.",
+    "Open in Draw.io" : "Atvērt Draw.io",
+    "Saving..." : "Saglabā...",
+    "Auto" : "Automātiski",
+    "Dark" : "Tumšs",
+    "Yes" : "Jā",
+    "No" : "Nē",
+    "Language" : "Valoda",
+    "Save" : "Saglabāt"
+},
+"nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2);");
