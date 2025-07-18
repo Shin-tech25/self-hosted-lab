@@ -1,4 +1,12 @@
+<!--
+  - SPDX-FileCopyrightText: 2017 Nextcloud GmbH and Nextcloud contributors
+  - SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 # Changelog
+
+## 5.9.0 - 2025-07-12
+### Added
+- Implement config to use a given size for the shorter edge
 
 ## 5.8.0 - 2025-02-07
 ### Added

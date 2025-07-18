@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
+<!--
+  - SPDX-FileCopyrightText: 2016 Nextcloud GmbH and Nextcloud contributors
+  - SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
 	<id>previewgenerator</id>
 	<name>Preview Generator</name>
@@ -11,7 +15,7 @@ The first time you install this app, before using a cron job, you properly want 
 
 **Important**: To enable pre-generation of previews you must add **php /var/www/nextcloud/occ preview:pre-generate** to a system cron job that runs at times of your choosing.]]>
 	</description>
-	<version>5.8.0</version>
+	<version>5.9.0</version>
 	<licence>agpl</licence>
 	<author>Richard Steinmetz</author>
 	<namespace>PreviewGenerator</namespace>
