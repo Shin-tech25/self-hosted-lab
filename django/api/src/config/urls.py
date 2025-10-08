@@ -28,3 +28,5 @@ urlpatterns = [
     #     url=static("favicon.png"), permanent=True
     # )),
 ]
+
+admin.site.site_url = None
