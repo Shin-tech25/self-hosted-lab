@@ -16,6 +16,13 @@ containerd/
 # media/ の全ファイルを無視
 media/
 
+# wireguard/ の全ファイルを無視
+wireguard/
+
+models/
+
+node_modules/
+
 # ただし、以下の設定ファイルは Git に含める
 !growi/docker-compose.yml
 !growi/docker-compose.override.yml
@@ -38,3 +45,6 @@ database.yml
 
 # Python仮想環境
 .venv/
+
+# Pycache
+__pycache__/
