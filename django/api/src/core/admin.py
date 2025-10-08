@@ -1,4 +1,5 @@
 from django.contrib import admin
+from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
 from .models import Account, AccountDailyStat, ClosedPosition, PhantomJob
 
 @admin.register(Account)
@@ -32,16 +33,14 @@ class ClosedPositionAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = (
-        "account__account_id", "symbol", "side",
-        ("close_time", admin.DateFieldListFilter),
+        'account',
+        'symbol', 'side',
+        ('close_time', DateTimeRangeFilter),
     )
     search_fields = (
-        "account__account_id",
-        "symbol",
-        "ticket",
-        "magic",
-        "comment",
+        "=magic",
     )
+    search_help_text = "Search by Magic Number"
     date_hierarchy = "close_time"
     ordering = ("-close_time", "-id")
     readonly_fields = ("created_at",)

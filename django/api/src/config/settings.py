@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "core",
     "rest_framework_api_key",
+    "rangefilter",
 ]
 
 MIDDLEWARE = [
