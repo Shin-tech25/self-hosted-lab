@@ -33,9 +33,9 @@ class ClosedPositionAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = (
+        ('close_time', DateTimeRangeFilter),
         'account',
         'symbol', 'side',
-        ('close_time', DateTimeRangeFilter),
     )
     search_fields = (
         "=magic",
@@ -67,8 +67,12 @@ class PhantomJobAdmin(admin.ModelAdmin):
         "slippage", "tol_price_pips", "cooldown_sec",
         "magic", "started_at", "finished_at", "error_detail", "failed_at", "created_at",
     )
-    list_filter = ("status", "account_id", "symbol", "side", "use_risk_lot")
-    search_fields = ("magic", "account_id", "symbol")
+    list_filter = (
+        ("finished_at", DateTimeRangeFilter),
+        "account_id", "status", "symbol", "side",
+    )
+    search_fields = ("=magic",)
+    search_help_text = "Search by Magic Number"
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
     readonly_fields = ("id", "created_at", "updated_at",)
