@@ -40,7 +40,12 @@ class AccountDailyStat(models.Model):
 
     class Meta:
         db_table = "account_daily_stats"
-        unique_together = ("account", "date")
+        constraints = [
+            models.UniqueConstraint(fields=["account", "date"], name="uniq_account_date"),
+        ]
+        indexes = [
+            models.Index(fields=["account", "date"], name="idx_account_date"),
+        ]
         ordering = ["-date"]
 
     def __str__(self):

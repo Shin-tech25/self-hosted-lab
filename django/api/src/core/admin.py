@@ -6,6 +6,7 @@ from .models import Account, AccountDailyStat, ClosedPosition, PhantomJob
 class AccountAdmin(admin.ModelAdmin):
     list_display   = ("account_id", "broker", "name", "server", "is_active", "created_at")
     list_filter    = ("broker", "is_active")
+    search_fields  = ("account_id", "name", "server")
     ordering       = ("-is_active", "broker", "account_id")
 
 @admin.register(AccountDailyStat)

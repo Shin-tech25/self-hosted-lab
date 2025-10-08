@@ -48,3 +48,6 @@ database.yml
 
 # Pycache
 __pycache__/
+
+# migrations
+**/migrations/
