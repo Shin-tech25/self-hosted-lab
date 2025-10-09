@@ -82,27 +82,28 @@ class ClosedPositionAdmin(admin.ModelAdmin):
             "trades": queryset,  # ← 明細を渡す
         })
         return HttpResponse(html, content_type="text/html; charset=utf-8")
+    export_perf_html.short_description = "Export Performance Report for Selected Trades"
 
-    def export_perf_pdf(self, request, queryset):
-        queryset = queryset.select_related("account").order_by("close_time", "id")
-        if not queryset.exists():
-            self.message_user(request, "対象データがありません。", level=messages.WARNING)
-            return
-        summary = summarize(queryset)
-        html = render_to_string("admin/perf_report.html", {
-            "summary": summary,
-            "generated_at": now(),
-            "count": queryset.count(),
-            "trades": queryset,  # ← 明細を渡す
-            "for_pdf": True,
-        })
-        # WeasyPrintでPDF化（要: weasyprint インストール）
-        from weasyprint import HTML
-        pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
-        resp = HttpResponse(pdf, content_type="application/pdf")
-        resp["Content-Disposition"] = 'attachment; filename="perf_report.pdf"'
-        return resp
-    export_perf_pdf.short_description = "選択した決済のパフォーマンスレポート（PDFダウンロード）"
+    # def export_perf_pdf(self, request, queryset):
+    #     queryset = queryset.select_related("account").order_by("close_time", "id")
+    #     if not queryset.exists():
+    #         self.message_user(request, "対象データがありません。", level=messages.WARNING)
+    #         return
+    #     summary = summarize(queryset)
+    #     html = render_to_string("admin/perf_report.html", {
+    #         "summary": summary,
+    #         "generated_at": now(),
+    #         "count": queryset.count(),
+    #         "trades": queryset,  # ← 明細を渡す
+    #         "for_pdf": True,
+    #     })
+    #     # WeasyPrintでPDF化（要: weasyprint インストール）
+    #     from weasyprint import HTML
+    #     pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+    #     resp = HttpResponse(pdf, content_type="application/pdf")
+    #     resp["Content-Disposition"] = 'attachment; filename="perf_report.pdf"'
+    #     return resp
+    # export_perf_pdf.short_description = "選択した決済のパフォーマンスレポート（PDFダウンロード）"
 
 @admin.register(PhantomJob)
 class PhantomJobAdmin(admin.ModelAdmin):
