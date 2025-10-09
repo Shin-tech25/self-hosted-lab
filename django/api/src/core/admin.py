@@ -73,17 +73,18 @@ class ClosedPositionAdmin(admin.ModelAdmin):
         if not queryset.exists():
             self.message_user(request, "対象データがありません。", level=messages.WARNING)
             return
-        queryset = queryset.select_related("account")  # N+1回避
+        queryset = queryset.select_related("account").order_by("close_time", "id")
         summary = summarize(queryset)
         html = render_to_string("admin/perf_report.html", {
             "summary": summary,
             "generated_at": now(),
             "count": queryset.count(),
-            # ここにフィルタ条件なども載せると良い: request.GET を整形して入れるなど
+            "trades": queryset,  # ← 明細を渡す
         })
         return HttpResponse(html, content_type="text/html; charset=utf-8")
 
     def export_perf_pdf(self, request, queryset):
+        queryset = queryset.select_related("account").order_by("close_time", "id")
         if not queryset.exists():
             self.message_user(request, "対象データがありません。", level=messages.WARNING)
             return
@@ -92,6 +93,7 @@ class ClosedPositionAdmin(admin.ModelAdmin):
             "summary": summary,
             "generated_at": now(),
             "count": queryset.count(),
+            "trades": queryset,  # ← 明細を渡す
             "for_pdf": True,
         })
         # WeasyPrintでPDF化（要: weasyprint インストール）

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root{
-      --border:#e5e7eb; --muted:#6b7280; --text:#111827;
+      --border:#e5e7eb; --muted:#6b7280; --text:#111827; --zebra:#f9fafb;
     }
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto;color:var(--text);margin:24px}
     h1{font-size:20px;margin:0 0 8px}
@@ -20,6 +20,13 @@
     th, td{border:1px solid var(--border); padding:8px; font-size:13px; text-align:right}
     th:first-child, td:first-child{text-align:left}
     .small{font-size:12px; color:var(--muted)}
+    /* 明細の可読性: 奇数行を淡いグレーで */
+    tbody tr:nth-child(odd){background:var(--zebra)}
+    /* 長いテキストは折返し */
+    .wrap{white-space:normal; word-break:break-all}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
+    .right{text-align:right}
+    .center{text-align:center}
   </style>
 </head>
 <body>
@@ -126,6 +133,53 @@
     {% empty %}
     <tr><td colspan="6">-</td></tr>
     {% endfor %}
+  </table>
+
+  <!-- Trades (detail) -->
+  <h2>Trades (detail)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Account</th>
+        <th>Symbol</th>
+        <th>Side</th>
+        <th class="right">Volume</th>
+        <th class="right">Open Price</th>
+        <th class="right">Close Price</th>
+        <th class="right">Profit</th>
+        <th class="right">Commission</th>
+        <th class="right">Swap</th>
+        <th class="right">Net</th>
+        <th class="mono">Open Time</th>
+        <th class="mono">Close Time</th>
+        <th class="mono">Ticket</th>
+        <th class="mono">Magic</th>
+        <th class="wrap">Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in trades %}
+      <tr>
+        <td>{{ t.account.account_id }}</td>
+        <td>{{ t.symbol }}</td>
+        <td class="center">{{ t.side }}</td>
+        <td class="right">{{ t.volume|floatformat:2 }}</td>
+        <td class="right">{{ t.open_price|floatformat:5 }}</td>
+        <td class="right">{{ t.close_price|floatformat:5 }}</td>
+        <td class="right">{{ t.profit|floatformat:2 }}</td>
+        <td class="right">{{ t.commission|floatformat:2 }}</td>
+        <td class="right">{{ t.swap|floatformat:2 }}</td>
+        <td class="right">{{ t.net_profit|floatformat:2 }}</td>
+        <td class="mono">{{ t.open_time }}</td>
+        <td class="mono">{{ t.close_time }}</td>
+        <td class="mono">{{ t.ticket }}</td>
+        <td class="mono">{% if t.magic %}{{ t.magic }}{% else %}-{% endif %}</td>
+        <td class="wrap">{% if t.comment %}{{ t.comment }}{% else %}-{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="15" class="center">No trades.</td></tr>
+      {% endfor %}
+    </tbody>
   </table>
 
   <div class="small">※ Kelly は参考値です。実運用ロット提案ではありません。</div>
