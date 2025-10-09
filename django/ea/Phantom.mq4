@@ -305,7 +305,7 @@ void MaintainGridSlots(){
       Print("riskLot <= 0 -> skip grid maintenance.");
       return;
    }
-   DebugLotContext(CalcRiskLotCore(), riskLot);      // 参考ログ（理論値と最終値）
+   // DebugLotContext(CalcRiskLotCore(), riskLot);      // 参考ログ（理論値と最終値）
 
    double a=RtSLPrice,b=RtTPPrice,range=MathAbs(b-a),sign=(RtSide=="BUY"?+1.0:-1.0);
    double q1=NpFor(JobSymbol,a+sign*range*0.25), mid=NpFor(JobSymbol,a+sign*0.5*range), q3=NpFor(JobSymbol,a+sign*0.75*range);
