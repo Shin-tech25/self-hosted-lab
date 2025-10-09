@@ -125,6 +125,36 @@
       margin-top:10px; color: var(--muted); font-size:12px; line-height:1.6;
       text-align:center;
     }
+
+    @media print {
+      /* 余白と向き（必要なら landscape に） */
+      @page { size: A4 portrait; margin: 12mm; }
+
+      /* 画面向けUIは隠す（ボタンなど） */
+      .no-print { display: none !important; }
+
+      /* thead/tfoot を各ページで繰り返す */
+      thead { display: table-header-group; }
+      tfoot { display: table-footer-group; }
+
+      /* 大きい表での改ページ制御 */
+      table { page-break-inside: auto; }
+      tr, td, th { page-break-inside: avoid; page-break-after: auto; }
+
+      /* セクション見出しで改ページを避ける/入れる調整（必要に応じて） */
+      h2 { break-after: avoid-page; margin-top: 12px; }
+
+      /* リンクの下線・色などを印刷向けに抑える */
+      a { color: #111; text-decoration: none; }
+
+      /* 背景色の出方はブラウザ設定依存。薄いグレーは線で代替も可能 */
+      tbody tr:nth-child(odd){ background: #f2f3f5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    /* 画面表示時だけ出す操作ボタンなど */
+    @media screen {
+      .print-actions { margin: 8px 0 16px; }
+    }
   </style>
 </head>
 <body>

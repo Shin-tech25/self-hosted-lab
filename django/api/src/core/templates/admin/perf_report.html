@@ -36,6 +36,12 @@
     {% if summary.avg_duration_display %} / Avg Duration: {{ summary.avg_duration_display }}{% endif %}
   </div>
 
+  <div class="print-actions no-pdf">
+    <button class="no-print" onclick="window.print()" style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer">
+    📄 Print / Save as PDF
+    </button>
+  </div>
+
   <!-- KPI -->
   <div class="kpi">
     <div class="card">
@@ -154,7 +160,7 @@
         <th class="mono">Close Time</th>
         <th class="mono">Ticket</th>
         <th class="mono">Magic</th>
-        <th class="wrap">Comment</th>
+        <th class="mono">Comment</th>
       </tr>
     </thead>
     <tbody>
@@ -174,7 +180,7 @@
         <td class="mono">{{ t.close_time }}</td>
         <td class="mono">{{ t.ticket }}</td>
         <td class="mono">{% if t.magic %}{{ t.magic }}{% else %}-{% endif %}</td>
-        <td class="wrap">{% if t.comment %}{{ t.comment }}{% else %}-{% endif %}</td>
+        <td class="mono">{% if t.comment %}{{ t.comment }}{% else %}-{% endif %}</td>
       </tr>
       {% empty %}
       <tr><td colspan="15" class="center">No trades.</td></tr>
