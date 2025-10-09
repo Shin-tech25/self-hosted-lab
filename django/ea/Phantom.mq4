@@ -15,7 +15,7 @@ input bool   NOTIFY_PUSH = true;                          // MT4 Push 通知
 
 // マージン安全係数（FreeMarginの何割までを使うか）
 input double MARGIN_SAFETY = 0.95;                        // 0.90〜0.98 推奨
-// Tick準備待ちリトライ
+// Tick準備待ちパラメータ
 input int    TICK_RETRIES  = 15;                          // 15回
 input int    TICK_WAIT_MS  = 200;                         // 200ms × 15 = 最大3秒
 
@@ -37,8 +37,18 @@ bool   IsPendingType(int t){ return (t==OP_BUYLIMIT||t==OP_BUYSTOP||t==OP_SELLLI
 void   LogErr(string where,int code){ Print(where," failed. err=",code); }
 string _fmt5(double v){ return DoubleToString(v,5); }
 
+// --- cool down / GV helpers（復活）
+string GVName(const string tag){ return StringFormat("GRID_CD_%s_%s_%d",JobSymbol,tag,RtMagic); }
+bool   CooldownPassed(const string tag){
+   string n=GVName(tag); double v=GlobalVariableGet(n);
+   if(v==0) return true;
+   return (TimeCurrent()-(int)v)>=RtCooldownSec;
+}
+void   TouchCooldown(const string tag){ GlobalVariableSet(GVName(tag),TimeCurrent()); }
+
 // ===== Tick readiness =============================================
-bool EnsureTickReady(const string sym, int retries=TICK_RETRIES, int sleep_ms=TICK_WAIT_MS){
+// ※ デフォルト引数は使わない（input変数は使えないため）
+bool EnsureTickReady(const string sym, int retries, int sleep_ms){
    if(!SymbolSelect(sym,true)){
       Print("SymbolSelect failed: ", sym, " err=",GetLastError());
       return false;
@@ -145,32 +155,63 @@ double PerLotLossForQuarterRange(){
    return (qr/ts)*tv;
 }
 
+// --- 方向・全クローズ・境界判定（復活）
+bool DirectionOK(){
+   if(RtSide=="BUY"  && !(RtTPPrice>RtSLPrice)) { Print("BUYならTP>SL"); return false; }
+   if(RtSide=="SELL" && !(RtTPPrice<RtSLPrice)) { Print("SELLならTP<SL"); return false; }
+   if(RtSLPrice<=0 || RtTPPrice<=0){ Print("境界値0不可"); return false; }
+   return true;
+}
+bool CancelAllPendingsAndCloseAllByMagic(){
+   bool ok=true;
+   for(int i=OrdersTotal()-1;i>=0;i--){
+      if(!OrderSelect(i,SELECT_BY_POS,MODE_TRADES)) continue;
+      if(OrderSymbol()!=JobSymbol || OrderMagicNumber()!=RtMagic) continue;
+      int t=OrderType();
+      if(IsPendingType(t)){
+         if(!OrderDelete(OrderTicket())){ LogErr("OrderDelete",GetLastError()); ok=false; }
+      }else if(t==OP_BUY || t==OP_SELL){
+         double px=(t==OP_BUY?MarketInfo(JobSymbol,MODE_BID):MarketInfo(JobSymbol,MODE_ASK));
+         if(!OrderClose(OrderTicket(),OrderLots(),px,RtSlippage,clrRed)){ LogErr("OrderClose",GetLastError()); ok=false; }
+      }
+   }
+   return ok;
+}
+bool PriceHitBoundary(){
+   double lo=MathMin(RtSLPrice,RtTPPrice), hi=MathMax(RtSLPrice,RtTPPrice);
+   double bid=MarketInfo(JobSymbol,MODE_BID), ask=MarketInfo(JobSymbol,MODE_ASK);
+   return (ask<=lo || bid>=hi);
+}
+
 // ===== ロット計算：リスク基準（理論値） =============================
 double CalcRiskLotCore(){
    if(!RtUseRiskLot) return NormalizeLotToBroker(RtLotsFixed);
    double per=PerLotLossForQuarterRange();
-   if(per<=0) return 0.0;  // ここでは固定ロットに落とさない（安全側）
+   if(per<=0) return 0.0;  // 固定ロットに落とさず中止（安全）
    double maxDD=AccountEquity()*(RtRiskPercent/100.0);
    return NormalizeLotToBroker(maxDD/(10*per));
 }
 
 // ===== ロット計算：証拠金で上限キャップ ===========================
-double CapLotByMargin(double lot_risk){
-   if(lot_risk<=0) return 0.0;
+double CapLotByMargin(double lot_risk, int grid_slots){
+   if(lot_risk <= 0) return 0.0;
    double mreq = MarketInfo(JobSymbol, MODE_MARGINREQUIRED);
-   if(mreq<=0) mreq = MarketInfo(JobSymbol, MODE_MARGININIT);
+   if(mreq <= 0) mreq = MarketInfo(JobSymbol, MODE_MARGININIT);
    double fm   = AccountFreeMargin();
-   if(mreq<=0 || fm<=0) return 0.0;
+   if(mreq <= 0 || fm <= 0) return 0.0;
 
-   double max_by_margin = (fm * MARGIN_SAFETY) / mreq;
-   double final_lot     = MathMin(lot_risk, max_by_margin);
+   // 1本あたりではなく、全スロット合計を想定
+   double max_total_lot = (fm * MARGIN_SAFETY) / mreq;
+   double max_per_slot  = max_total_lot / grid_slots;
+
+   double final_lot = MathMin(lot_risk, max_per_slot);
    return NormalizeLotToBroker(final_lot);
 }
 
 // ===== まとめ：安全ロット ==========================================
 double CalcRiskLotSafe(){
-   // Tick準備ができていないなら 0 を返して発注中止
-   if(!EnsureTickReady(JobSymbol)){
+   // Tick準備（input値を明示的に渡す）
+   if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       ReportError("TickValue/Size not ready -> skip trading to avoid wrong lot.");
       return 0.0;
    }
@@ -179,7 +220,7 @@ double CalcRiskLotSafe(){
       ReportError("PerLotLoss=0 or risk lot <= 0 -> skip.");
       return 0.0;
    }
-   double lot_final = CapLotByMargin(lot_risk);
+   double lot_final = CapLotByMargin(lot_risk, 6);
    if(lot_final<=0){
       ReportError("Insufficient margin -> lot becomes 0. Skip.");
       return 0.0;
@@ -234,7 +275,7 @@ bool ClaimLatestPending(){
    RtCooldownSec =(int)JsonGetNum(resp,"cooldown_sec",8);
 
    // --- 追加：Tick準備チェック（ここで失敗ならアボート）
-   if(!EnsureTickReady(JobSymbol)){
+   if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       int e=GetLastError();
       string msg=StringFormat("Tick not ready after claim. sym=%s err=%d",JobSymbol,e);
       Print(msg); ReportError(msg); JobId=-1; JobStatus=""; IsActive=false; return false;
@@ -295,17 +336,18 @@ bool EnsureSlotPending(const string tag,int ptype,double entry,double sl,double 
 
 void MaintainGridSlots(){
    // --- 計算前にも Tick 準備を確認
-   if(!EnsureTickReady(JobSymbol)){
+   if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       ReportError("Tick not ready in MaintainGridSlots. skip.");
       IsActive=false; JobId=-1; JobStatus=""; return;
    }
 
-   double riskLot = CalcRiskLotSafe();               // ★ 置き換え（安全ロット）
+   double lot_risk  = CalcRiskLotCore();
+   double riskLot   = CalcRiskLotSafe();          // ★ 置き換え（安全ロット）
    if(riskLot<=0){
       Print("riskLot <= 0 -> skip grid maintenance.");
       return;
    }
-   // DebugLotContext(CalcRiskLotCore(), riskLot);      // 参考ログ（理論値と最終値）
+   // DebugLotContext(lot_risk, riskLot);            // 参考ログ（理論値と最終値）
 
    double a=RtSLPrice,b=RtTPPrice,range=MathAbs(b-a),sign=(RtSide=="BUY"?+1.0:-1.0);
    double q1=NpFor(JobSymbol,a+sign*range*0.25), mid=NpFor(JobSymbol,a+sign*0.5*range), q3=NpFor(JobSymbol,a+sign*0.75*range);
