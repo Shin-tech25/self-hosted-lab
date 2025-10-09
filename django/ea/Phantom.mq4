@@ -242,15 +242,30 @@ void DebugLotContext(const double lot_risk,const double lot_final){
       JobSymbol,dist,pips,ts,tv,per,AccountEquity(),RtRiskPercent,fm,mreq,max_by_margin,lot_risk,lot_final));
 }
 
+// ======================= 共通アボート（全クローズ） =================
+// エラー/例外時に Completed と同様の全クローズと停止を実施
+void AbortAndClose(const string reason){
+   CancelAllPendingsAndCloseAllByMagic();
+   NotifyEnd("error");
+   // 内部状態の完全リセット
+   IsActive=false; PausedBoundary=false;
+   JobId=-1; JobStatus=""; JobSymbol=""; RtMagic=0;
+}
+
 // ======================= Django API ================================
 bool ReportError(const string detail){
-   if(JobId<=0) { NotifyError(detail); return false; }
-   string d=detail; StringReplace(d,"\\","\\\\"); StringReplace(d,"\"","\\\"");
-   string body=StringFormat("{\"error_detail\":\"%s\"}",d), dummy;
-   bool ok=HttpPOST(StringFormat("/phantom-jobs/%d/error/",JobId),body,dummy);
-   if(!ok) Print("ReportError failed: ",dummy);
+   // サーバへエラー報告（可能なら）
+   if(JobId>0){
+      string d=detail; StringReplace(d,"\\","\\\\"); StringReplace(d,"\"","\\\"");
+      string body=StringFormat("{\"error_detail\":\"%s\"}",d), dummy;
+      bool ok=HttpPOST(StringFormat("/phantom-jobs/%d/error/",JobId),body,dummy);
+      if(!ok) Print("ReportError failed: ",dummy);
+   }
+   // 端末側通知
    NotifyError(detail);
-   return ok;
+   // ★ エラー時は必ず全クローズして停止
+   AbortAndClose(detail);
+   return false;
 }
 bool ClaimLatestPending(){
    string cur=Symbol();
@@ -274,16 +289,16 @@ bool ClaimLatestPending(){
    RtTolPricePips=JsonGetNum(resp,"tol_price_pips",2.5);
    RtCooldownSec =(int)JsonGetNum(resp,"cooldown_sec",8);
 
-   // --- 追加：Tick準備チェック（ここで失敗ならアボート）
+   // --- 追加：Tick準備チェック（ここで失敗なら全クローズ）
    if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       int e=GetLastError();
       string msg=StringFormat("Tick not ready after claim. sym=%s err=%d",JobSymbol,e);
-      Print(msg); ReportError(msg); JobId=-1; JobStatus=""; IsActive=false; return false;
+      Print(msg); ReportError(msg); return false;
    }
 
    if(!(RtTPPrice>0&&RtSLPrice>0)||!DirectionOK()){
       string msg=StringFormat("Invalid params: side=%s sl=%G tp=%G",RtSide,RtSLPrice,RtTPPrice);
-      Print(msg); ReportError(msg); JobId=-1; JobStatus=""; IsActive=false; return false;
+      Print(msg); ReportError(msg); return false;
    }
 
    IsActive=(JobId>0 && JobStatus=="RUNNING");
@@ -314,7 +329,7 @@ bool EnsureSlotPending(const string tag,int ptype,double entry,double sl,double 
       int ntk=OrderSend(JobSymbol,ptype,desireLot,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
       if(ntk>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
       _sendFailCount++; int err=GetLastError(); string msg=StringFormat("OrderSend failed tag=%s err=%d",tag,err); Print(msg);
-      if(_sendFailCount>=_sendFailLimit){ ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg)); IsActive=false; JobId=-1; JobStatus=""; }
+      if(_sendFailCount>=_sendFailLimit){ ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg)); }
       return false;
    }
    if(!OrderSelect(tk,SELECT_BY_TICKET)) return false;
@@ -327,7 +342,7 @@ bool EnsureSlotPending(const string tag,int ptype,double entry,double sl,double 
          int ntk=OrderSend(JobSymbol,ptype,desireLot,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
          if(ntk>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
          _sendFailCount++; int err=GetLastError(); string msg=StringFormat("ReOrder failed tag=%s err=%d",tag,err); Print(msg);
-         if(_sendFailCount>=_sendFailLimit){ ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg)); IsActive=false; JobId=-1; JobStatus=""; }
+         if(_sendFailCount>=_sendFailLimit){ ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg)); }
          return false;
       }
    }
@@ -338,7 +353,7 @@ void MaintainGridSlots(){
    // --- 計算前にも Tick 準備を確認
    if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       ReportError("Tick not ready in MaintainGridSlots. skip.");
-      IsActive=false; JobId=-1; JobStatus=""; return;
+      return;
    }
 
    double lot_risk  = CalcRiskLotCore();
@@ -347,7 +362,7 @@ void MaintainGridSlots(){
       Print("riskLot <= 0 -> skip grid maintenance.");
       return;
    }
-   // DebugLotContext(lot_risk, riskLot);            // 参考ログ（理論値と最終値）
+   // DebugLotContext(lot_risk, riskLot); // 必要なら有効化
 
    double a=RtSLPrice,b=RtTPPrice,range=MathAbs(b-a),sign=(RtSide=="BUY"?+1.0:-1.0);
    double q1=NpFor(JobSymbol,a+sign*range*0.25), mid=NpFor(JobSymbol,a+sign*0.5*range), q3=NpFor(JobSymbol,a+sign*0.75*range);
@@ -393,7 +408,6 @@ int start(){
    if(!DirectionOK()){
       string msg=StringFormat("Direction violated: side=%s sl=%G tp=%G",RtSide,RtSLPrice,RtTPPrice);
       Print(msg); ReportError(msg);
-      IsActive=false; JobId=-1; JobStatus="";
       return 0;
    }
    if(!PausedBoundary && PriceHitBoundary()){
