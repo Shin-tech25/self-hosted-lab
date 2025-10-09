@@ -1,6 +1,11 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.utils.timezone import now
 from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
 from .models import Account, AccountDailyStat, ClosedPosition, PhantomJob
+
+from .utils.perf import summarize
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
@@ -61,6 +66,41 @@ class ClosedPositionAdmin(admin.ModelAdmin):
             return "-"
         # 小数2桁、符号付き
         return f"{obj.net_profit:+,.2f}"
+    
+    actions = ["export_perf_html", "export_perf_pdf"]
+
+    def export_perf_html(self, request, queryset):
+        if not queryset.exists():
+            self.message_user(request, "対象データがありません。", level=messages.WARNING)
+            return
+        queryset = queryset.select_related("account")  # N+1回避
+        summary = summarize(queryset)
+        html = render_to_string("admin/perf_report.html", {
+            "summary": summary,
+            "generated_at": now(),
+            "count": queryset.count(),
+            # ここにフィルタ条件なども載せると良い: request.GET を整形して入れるなど
+        })
+        return HttpResponse(html, content_type="text/html; charset=utf-8")
+
+    def export_perf_pdf(self, request, queryset):
+        if not queryset.exists():
+            self.message_user(request, "対象データがありません。", level=messages.WARNING)
+            return
+        summary = summarize(queryset)
+        html = render_to_string("admin/perf_report.html", {
+            "summary": summary,
+            "generated_at": now(),
+            "count": queryset.count(),
+            "for_pdf": True,
+        })
+        # WeasyPrintでPDF化（要: weasyprint インストール）
+        from weasyprint import HTML
+        pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+        resp = HttpResponse(pdf, content_type="application/pdf")
+        resp["Content-Disposition"] = 'attachment; filename="perf_report.pdf"'
+        return resp
+    export_perf_pdf.short_description = "選択した決済のパフォーマンスレポート（PDFダウンロード）"
 
 @admin.register(PhantomJob)
 class PhantomJobAdmin(admin.ModelAdmin):

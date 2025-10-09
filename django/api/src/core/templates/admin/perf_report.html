@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>Performance Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --border:#e5e7eb; --muted:#6b7280; --text:#111827;
+    }
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto;color:var(--text);margin:24px}
+    h1{font-size:20px;margin:0 0 8px}
+    h2{font-size:16px;margin:18px 0 8px}
+    .muted{color:var(--muted); font-size:12px; margin-bottom:16px}
+    .kpi{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0}
+    .card{border:1px solid var(--border); border-radius:10px; padding:12px}
+    .num{font-size:18px; font-weight:600}
+    .note{font-size:12px; color:var(--muted)}
+    table{border-collapse:collapse; width:100%; margin:12px 0}
+    th, td{border:1px solid var(--border); padding:8px; font-size:13px; text-align:right}
+    th:first-child, td:first-child{text-align:left}
+    .small{font-size:12px; color:var(--muted)}
+  </style>
+</head>
+<body>
+  <h1>Performance Report</h1>
+  <div class="muted">
+    Generated: {{ generated_at }} / Trades: {{ count }}
+    {% if summary.avg_duration_display %} / Avg Duration: {{ summary.avg_duration_display }}{% endif %}
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi">
+    <div class="card">
+      <div class="note">Net PnL</div>
+      <div class="num">{{ summary.net|floatformat:2 }}</div>
+    </div>
+    <div class="card">
+      <div class="note">PF</div>
+      <div class="num">{{ summary.pf_display }}</div>
+      <div class="small">GP={{ summary.gross_profit|floatformat:2 }} / GL={{ summary.gross_loss|floatformat:2 }}</div>
+    </div>
+    <div class="card">
+      <div class="note">Expectancy / Trade</div>
+      <div class="num">{{ summary.expectancy_display }}</div>
+    </div>
+    <div class="card">
+      <div class="note">Winrate</div>
+      <div class="num">{{ summary.winrate_pct_display }}</div>
+    </div>
+  </div>
+
+  <!-- Overall Table -->
+  <table>
+    <tr>
+      <th>Wins</th><td>{{ summary.wins }}</td>
+      <th>Losses</th><td>{{ summary.losses }}</td>
+      <th>Flats</th><td>{{ summary.flats }}</td>
+    </tr>
+    <tr>
+      <th>Avg Win</th><td>{{ summary.avg_win_display }}</td>
+      <th>Avg Loss</th><td>{{ summary.avg_loss_display }}</td>
+      <th>Payoff</th><td>{{ summary.payoff_display }}</td>
+    </tr>
+    <tr>
+      <th>Median PnL</th><td>{{ summary.median_pnl_display }}</td>
+      <th>StdDev PnL</th><td>{{ summary.std_pnl_display }}</td>
+      <th>Trades / Day</th><td>{{ summary.trades_per_day_display }}</td>
+    </tr>
+    <tr>
+      <th>Max Win Streak</th><td>{{ summary.streak_win_max }}</td>
+      <th>Max Loss Streak</th><td>{{ summary.streak_loss_max }}</td>
+      <th>Kelly (ref.)</th><td>{{ summary.kelly_pct_display }}</td>
+    </tr>
+  </table>
+
+  <!-- By Symbol -->
+  <h2>By Symbol</h2>
+  <table>
+    <tr><th>Symbol</th><th>Trades</th><th>Winrate</th><th>PF</th><th>Expectancy</th><th>Median</th></tr>
+    {% for row in summary.by_symbol %}
+    <tr>
+      <td>{{ row.key }}</td>
+      <td>{{ row.n }}</td>
+      <td>{{ row.winrate_pct_display }}</td>
+      <td>{{ row.pf_display }}</td>
+      <td>{{ row.expect_display }}</td>
+      <td>{{ row.median_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">-</td></tr>
+    {% endfor %}
+  </table>
+
+  <!-- By Side -->
+  <h2>By Side</h2>
+  <table>
+    <tr><th>Side</th><th>Trades</th><th>Winrate</th><th>PF</th><th>Expectancy</th><th>Median</th></tr>
+    {% for row in summary.by_side %}
+    <tr>
+      <td>{{ row.key }}</td>
+      <td>{{ row.n }}</td>
+      <td>{{ row.winrate_pct_display }}</td>
+      <td>{{ row.pf_display }}</td>
+      <td>{{ row.expect_display }}</td>
+      <td>{{ row.median_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">-</td></tr>
+    {% endfor %}
+  </table>
+
+  <!-- By Hour -->
+  <h2>By Hour (open_time)</h2>
+  <table>
+    <tr><th>Hour</th><th>Trades</th><th>Winrate</th><th>PF</th><th>Expectancy</th><th>Median</th></tr>
+    {% for row in summary.by_hour %}
+    <tr>
+      <td>{{ row.key }}:00</td>
+      <td>{{ row.n }}</td>
+      <td>{{ row.winrate_pct_display }}</td>
+      <td>{{ row.pf_display }}</td>
+      <td>{{ row.expect_display }}</td>
+      <td>{{ row.median_display }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6">-</td></tr>
+    {% endfor %}
+  </table>
+
+  <div class="small">※ Kelly は参考値です。実運用ロット提案ではありません。</div>
+</body>
+</html>
