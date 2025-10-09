@@ -11,12 +11,15 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(AccountDailyStat)
 class AccountDailyStatAdmin(admin.ModelAdmin):
-    list_display = ("id", "account", "date", "balance", "equity", "pnl", "created_at", "updated_at")
-    list_filter = ("date", "account")
-    search_fields = ("=id", "account__account_id")
+    list_display = ("id", "account", "date", "balance", "equity", "pnl", "created_at")
+    list_filter = (
+        ("date", DateRangeFilter),
+        "account",
+    )
     date_hierarchy = "date"
     ordering = ("-date", "-id")
     readonly_fields = ("created_at",)
+    list_per_page = 50
 
 @admin.register(ClosedPosition)
 class ClosedPositionAdmin(admin.ModelAdmin):
