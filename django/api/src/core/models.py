@@ -37,6 +37,7 @@ class AccountDailyStat(models.Model):
     pnl = models.DecimalField(max_digits=18, decimal_places=2)     # 日次損益（PnL）
 
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = "account_daily_stats"

@@ -11,7 +11,7 @@ class AccountAdmin(admin.ModelAdmin):
 
 @admin.register(AccountDailyStat)
 class AccountDailyStatAdmin(admin.ModelAdmin):
-    list_display = ("id", "account", "date", "balance", "equity", "pnl", "created_at")
+    list_display = ("id", "account", "date", "balance", "equity", "pnl", "created_at", "updated_at")
     list_filter = ("date", "account")
     search_fields = ("=id", "account__account_id")
     date_hierarchy = "date"
