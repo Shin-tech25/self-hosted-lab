@@ -319,7 +319,7 @@ class QuickOrderForm(forms.Form):
     symbol  = forms.ChoiceField(label="通貨ペア", choices=SYMBOL_CHOICES)
     sl      = forms.FloatField(label="SL（損切り）")
     tp      = forms.FloatField(label="TP（利確）")
-    risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=2.0)
+    risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
 
     def clean(self):
         cleaned = super().clean()

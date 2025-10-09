@@ -142,7 +142,7 @@ class PhantomJob(models.Model):
     sl_price      = models.FloatField(null=True, blank=True)
     tp_price      = models.FloatField(null=True, blank=True)
     use_risk_lot  = models.BooleanField(default=True)
-    risk_percent  = models.FloatField(default=2.0)
+    risk_percent  = models.FloatField(default=3.5)
     lots_fixed    = models.FloatField(default=0.10)
     max_lot_cap   = models.FloatField(default=10.0)
     slippage      = models.IntegerField(default=3)
