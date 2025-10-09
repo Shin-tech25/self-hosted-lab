@@ -319,7 +319,7 @@ class QuickOrderForm(forms.Form):
     symbol  = forms.ChoiceField(label="通貨ペア", choices=SYMBOL_CHOICES)
     sl      = forms.FloatField(label="SL（損切り）")
     tp      = forms.FloatField(label="TP（利確）")
-    risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
+    #risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
 
     def clean(self):
         cleaned = super().clean()
@@ -349,7 +349,8 @@ class QuickOrderView(FormView):
         symbol  = form.cleaned_data["symbol"]
         sl      = form.cleaned_data["sl"]
         tp      = form.cleaned_data["tp"]
-        risk_percent   = form.cleaned_data["risk_percent"]
+        RISK_PERCENT_DEFAULT = 3.5  # Risk% Fixed
+        #risk_percent   = form.cleaned_data["risk_percent"]
 
         side = "BUY" if sl < tp else "SELL"
 
@@ -360,7 +361,7 @@ class QuickOrderView(FormView):
             sl_price=sl,
             tp_price=tp,
             use_risk_lot=True,
-            risk_percent=risk_percent,
+            risk_percent=RISK_PERCENT_DEFAULT,
             status=PhantomJob.Status.PENDING,
         )
         messages.success(self.request, f"発注ジョブを作成しました（{side} {symbol}）")
