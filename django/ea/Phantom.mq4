@@ -1,23 +1,23 @@
 //+------------------------------------------------------------------+
-//| Phantom.mq4  (API-driven Grid EA, margin-safe & tick-ready)     |
+//| Phantom.mq4  (API-driven Grid EA, fixed job-lot & safe fallback) |
 //| - Djangoと連携: claim / status poll / complete / error           |
 //| - 境界到達またはサーバ指示で全クローズ                           |
 //| - 通知は Push のみ（NOTIFY_PUSH=true のとき）                    |
-//| - 追加: Tick準備待ち + 証拠金キャップ付きロット計算              |
+//| - Job確定時にロットを一度だけ算出・固定、欠け分のみ補填          |
 //+------------------------------------------------------------------+
 #property strict
 
 // ======================== Inputs ==================================
-input string API_BASE    = "https://api.example.com";     // API Base URL
-input string API_KEY     = "YOUR_API_KEY";                // 認証キー（Authorization: Api-Key）
-input string ACCOUNT_ID  = "YOUR_ACCOUNT";                // 論理/口座ID
-input bool   NOTIFY_PUSH = true;                          // MT4 Push 通知
+input string API_BASE    = "https://api.example.com"; // API Base URL（末尾の / は不要）
+input string API_KEY     = "YOUR_API_KEY";            // 認証キー（Authorization: Api-Key）
+input string ACCOUNT_ID  = "YOUR_ACCOUNT";            // 論理/口座ID
+input bool   NOTIFY_PUSH = true;                      // MT4 Push 通知
 
 // マージン安全係数（FreeMarginの何割までを使うか）
-input double MARGIN_SAFETY = 0.95;                        // 0.90〜0.98 推奨
+input double MARGIN_SAFETY = 0.95;                    // 0.90〜0.98 推奨
 // Tick準備待ちパラメータ
-input int    TICK_RETRIES  = 15;                          // 15回
-input int    TICK_WAIT_MS  = 200;                         // 200ms × 15 = 最大3秒
+input int    TICK_RETRIES  = 15;                      // 15回
+input int    TICK_WAIT_MS  = 200;                     // 200ms × 15 = 最大3秒
 
 // ===================== Runtime Params =============================
 int     JobId=-1; string JobStatus=""; string JobSymbol="";
@@ -26,6 +26,10 @@ bool    RtUseRiskLot=true; double RtRiskPercent=2.0, RtLotsFixed=0.1, RtMaxLotCa
 int     RtSlippage=3; double RtTolPricePips=2.5; int RtCooldownSec=8;
 bool    IsActive=false, PausedBoundary=false; datetime _lastClaimTry=0, _lastStatusPoll=0;
 int     _sendFailCount=0, _sendFailLimit=3;
+
+// === Job 固有パラメータ（本仕様の中心） ============================
+int     RtPlannedSlots=6;     // 想定スロット数（デフォ: Q1×3, MID×2, Q3×1）
+double  RtJobLot=0.0;         // Job確定時に一度だけ算出・固定するロット
 
 // ======================== Utils ===================================
 double PipFor(string sym){
@@ -37,7 +41,7 @@ bool   IsPendingType(int t){ return (t==OP_BUYLIMIT||t==OP_BUYSTOP||t==OP_SELLLI
 void   LogErr(string where,int code){ Print(where," failed. err=",code); }
 string _fmt5(double v){ return DoubleToString(v,5); }
 
-// --- cool down / GV helpers（復活）
+// --- cooldown / GV helpers
 string GVName(const string tag){ return StringFormat("GRID_CD_%s_%s_%d",JobSymbol,tag,RtMagic); }
 bool   CooldownPassed(const string tag){
    string n=GVName(tag); double v=GlobalVariableGet(n);
@@ -128,25 +132,35 @@ int PendingTypeFor(double lv,double bid,double ask){
                           : (lv>=bid?OP_SELLLIMIT:OP_SELLSTOP);
 }
 string SlotTag(const string level,int k){ return StringFormat("GRID %s k%d",level,k); }
+
 int FindOpenByTag(const string tag){
    for(int i=OrdersTotal()-1;i>=0;i--){
       if(!OrderSelect(i,SELECT_BY_POS,MODE_TRADES)) continue;
       if(OrderMagicNumber()!=RtMagic||OrderSymbol()!=JobSymbol) continue;
       int t=OrderType(); if((t==OP_BUY||t==OP_SELL)&&OrderComment()==tag) return OrderTicket();
-   } return -1;
+   }
+   return -1;
 }
 int FindPendingByTag(const string tag){
    for(int i=OrdersTotal()-1;i>=0;i--){
       if(!OrderSelect(i,SELECT_BY_POS,MODE_TRADES)) continue;
       if(OrderMagicNumber()!=RtMagic||OrderSymbol()!=JobSymbol) continue;
       if(IsPendingType(OrderType()) && OrderComment()==tag) return OrderTicket();
-   } return -1;
+   }
+   return -1;
 }
+
 double NormalizeLotToBroker(double lot){
    double minLot=MarketInfo(JobSymbol,MODE_MINLOT), maxLot=MarketInfo(JobSymbol,MODE_MAXLOT), step=MarketInfo(JobSymbol,MODE_LOTSTEP);
-   if(step<=0) step=0.01; if(lot>RtMaxLotCap) lot=RtMaxLotCap; if(lot>maxLot) lot=maxLot; if(lot<minLot) lot=minLot;
-   lot=MathFloor(lot/step)*step; if(lot<minLot) lot=minLot; return NormalizeDouble(lot,2);
+   if(step<=0) step=0.01;
+   if(lot>RtMaxLotCap) lot=RtMaxLotCap;
+   if(lot>maxLot) lot=maxLot;
+   if(lot<minLot) lot=minLot;
+   lot=MathFloor(lot/step)*step;
+   if(lot<minLot) lot=minLot;
+   return NormalizeDouble(lot,2);
 }
+
 // 1ロットで「SL〜TPの1/4だけ逆行」したときの損失額（口座通貨）
 double PerLotLossForQuarterRange(){
    double ts=MarketInfo(JobSymbol,MODE_TICKSIZE), tv=MarketInfo(JobSymbol,MODE_TICKVALUE);
@@ -155,7 +169,7 @@ double PerLotLossForQuarterRange(){
    return (qr/ts)*tv;
 }
 
-// --- 方向・全クローズ・境界判定（復活）
+// --- 方向・全クローズ・境界判定
 bool DirectionOK(){
    if(RtSide=="BUY"  && !(RtTPPrice>RtSLPrice)) { Print("BUYならTP>SL"); return false; }
    if(RtSide=="SELL" && !(RtTPPrice<RtSLPrice)) { Print("SELLならTP<SL"); return false; }
@@ -193,53 +207,19 @@ double CalcRiskLotCore(){
 }
 
 // ===== ロット計算：証拠金で上限キャップ ===========================
-double CapLotByMargin(double lot_risk, int grid_slots){
-   if(lot_risk <= 0) return 0.0;
+double CapLotByMargin(double lot_base, int grid_slots){
+   if(lot_base <= 0) return 0.0;
    double mreq = MarketInfo(JobSymbol, MODE_MARGINREQUIRED);
    if(mreq <= 0) mreq = MarketInfo(JobSymbol, MODE_MARGININIT);
    double fm   = AccountFreeMargin();
    if(mreq <= 0 || fm <= 0) return 0.0;
 
-   // 1本あたりではなく、全スロット合計を想定
    double max_total_lot = (fm * MARGIN_SAFETY) / mreq;
-   double max_per_slot  = max_total_lot / grid_slots;
+   int slots = MathMax(1, grid_slots); // ゼロ割・過小割り防止
+   double max_per_slot  = max_total_lot / slots;
 
-   double final_lot = MathMin(lot_risk, max_per_slot);
+   double final_lot = MathMin(lot_base, max_per_slot);
    return NormalizeLotToBroker(final_lot);
-}
-
-// ===== まとめ：安全ロット ==========================================
-double CalcRiskLotSafe(){
-   // Tick準備（input値を明示的に渡す）
-   if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
-      ReportError("TickValue/Size not ready -> skip trading to avoid wrong lot.");
-      return 0.0;
-   }
-   double lot_risk = CalcRiskLotCore();
-   if(lot_risk<=0){
-      ReportError("PerLotLoss=0 or risk lot <= 0 -> skip.");
-      return 0.0;
-   }
-   double lot_final = CapLotByMargin(lot_risk, 6);
-   if(lot_final<=0){
-      ReportError("Insufficient margin -> lot becomes 0. Skip.");
-      return 0.0;
-   }
-   return lot_final;
-}
-
-// ===== デバッグ出力 ================================================
-void DebugLotContext(const double lot_risk,const double lot_final){
-   int dg=(int)MarketInfo(JobSymbol,MODE_DIGITS);
-   double pip=PipFor(JobSymbol);
-   double dist=MathAbs(RtTPPrice-RtSLPrice), pips=(pip>0?dist/pip:0);
-   double ts=MarketInfo(JobSymbol,MODE_TICKSIZE), tv=MarketInfo(JobSymbol,MODE_TICKVALUE);
-   double per=(ts>0&&tv>0)?((dist/4.0)/ts)*tv:0.0;
-   double mreq=MarketInfo(JobSymbol,MODE_MARGINREQUIRED); if(mreq<=0) mreq=MarketInfo(JobSymbol,MODE_MARGININIT);
-   double fm=AccountFreeMargin();
-   double max_by_margin=(mreq>0? (fm*MARGIN_SAFETY)/mreq : 0.0);
-   Print(StringFormat("[LOTCTX] sym=%s dist=%.5f (%.1f pips) ts=%.6f tv=%.6f perQ=%.2f Eq=%.0f Risk=%.2f%% fm=%.0f mreq/lot=%.0f maxLotByMargin=%.2f lotRisk=%.2f lotFinal=%.2f",
-      JobSymbol,dist,pips,ts,tv,per,AccountEquity(),RtRiskPercent,fm,mreq,max_by_margin,lot_risk,lot_final));
 }
 
 // ======================= Django API ================================
@@ -273,8 +253,9 @@ bool ClaimLatestPending(){
    RtSlippage    =(int)JsonGetNum(resp,"slippage",3);
    RtTolPricePips=JsonGetNum(resp,"tol_price_pips",2.5);
    RtCooldownSec =(int)JsonGetNum(resp,"cooldown_sec",8);
+   RtPlannedSlots=(int)JsonGetNum(resp,"planned_slots",6); // API側が返せるなら利用
 
-   // --- 追加：Tick準備チェック（ここで失敗ならアボート）
+   // --- Tick準備チェック（ここで失敗ならアボート）
    if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       int e=GetLastError();
       string msg=StringFormat("Tick not ready after claim. sym=%s err=%d",JobSymbol,e);
@@ -290,6 +271,20 @@ bool ClaimLatestPending(){
    if(IsActive){
       Print("CLAIMED job id=",JobId," magic=",RtMagic," side=",RtSide," symbol=",JobSymbol," status=",JobStatus);
       PausedBoundary=false; _sendFailCount=0; NotifyStart();
+
+      // === Job確定時に "一度だけ" ロット算出・固定 ==================
+      double lot_base = CalcRiskLotCore();
+      if(lot_base<=0){
+         ReportError("risk-lot<=0 at claim. abort.");
+         IsActive=false; JobId=-1; JobStatus=""; return false;
+      }
+      RtJobLot = CapLotByMargin(lot_base, RtPlannedSlots);
+      if(RtJobLot<=0){
+         ReportError("job-lot<=0 at claim. abort.");
+         IsActive=false; JobId=-1; JobStatus=""; return false;
+      }
+      Print(StringFormat("[JOBLOT] job=%d sym=%s magic=%d planned=%d lot=%.2f",
+            JobId, JobSymbol, RtMagic, RtPlannedSlots, RtJobLot));
    }
    return IsActive;
 }
@@ -308,26 +303,70 @@ bool MarkCompleted(){
 // ======================= Grid maintenance ==========================
 bool EnsureSlotPending(const string tag,int ptype,double entry,double sl,double tp,double tol_price,double tol_tp,double desireLot){
    if(FindOpenByTag(tag)!=-1) return true;
+
    int tk=FindPendingByTag(tag);
    if(tk==-1){
       if(!CooldownPassed(tag)) return true;
       int ntk=OrderSend(JobSymbol,ptype,desireLot,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
       if(ntk>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
-      _sendFailCount++; int err=GetLastError(); string msg=StringFormat("OrderSend failed tag=%s err=%d",tag,err); Print(msg);
-      if(_sendFailCount>=_sendFailLimit){ ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg)); IsActive=false; JobId=-1; JobStatus=""; }
+
+      // フォールバック：証拠金不足（ERR_NOT_ENOUGH_MONEY=134）の場合、今回のスロットだけ安全縮小
+      int err=GetLastError();
+      if(err==134){
+         double one_cap = CapLotByMargin(desireLot, 1);
+         if(one_cap>0 && one_cap<desireLot){
+            int rt=OrderSend(JobSymbol,ptype,one_cap,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
+            if(rt>0){
+               _sendFailCount=0; TouchCooldown(tag);
+               Print(StringFormat("fallback lot shrink tag=%s %.2f->%.2f", tag, desireLot, one_cap));
+               return true;
+            }
+            err=GetLastError();
+         }
+      }
+
+      _sendFailCount++;
+      string msg=StringFormat("OrderSend failed tag=%s err=%d",tag,err); Print(msg);
+      if(_sendFailCount>=_sendFailLimit){
+         ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg));
+         IsActive=false; JobId=-1; JobStatus="";
+      }
       return false;
    }
+
+   // 既存Pendingがある → 価格系のみ追従（ロットは触らない：OrderModifyでは変更不可）
    if(!OrderSelect(tk,SELECT_BY_TICKET)) return false;
    double cp=OrderOpenPrice(), csl=OrderStopLoss(), ctp=OrderTakeProfit();
    bool priceOff=(MathAbs(cp-entry)>tol_price), slOff=(MathAbs(csl-sl)>tol_price), tpOff=(MathAbs(ctp-tp)>tol_tp);
+
    if(priceOff||slOff||tpOff){
       if(!OrderModify(tk,entry,sl,tp,0,clrDodgerBlue)){
+         // 再発注（cooldown尊重）
          if(!CooldownPassed(tag)) return false;
          if(!OrderDelete(tk)) return false;
+
          int ntk=OrderSend(JobSymbol,ptype,desireLot,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
          if(ntk>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
-         _sendFailCount++; int err=GetLastError(); string msg=StringFormat("ReOrder failed tag=%s err=%d",tag,err); Print(msg);
-         if(_sendFailCount>=_sendFailLimit){ ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg)); IsActive=false; JobId=-1; JobStatus=""; }
+
+         int err2=GetLastError();
+         if(err2==134){
+            double one_cap = CapLotByMargin(desireLot, 1);
+            if(one_cap>0 && one_cap<desireLot){
+               int rt=OrderSend(JobSymbol,ptype,one_cap,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
+               if(rt>0){
+                  _sendFailCount=0; TouchCooldown(tag);
+                  Print(StringFormat("fallback lot shrink (reorder) tag=%s %.2f->%.2f", tag, desireLot, one_cap));
+                  return true;
+               }
+               err2=GetLastError();
+            }
+         }
+         _sendFailCount++;
+         string msg2=StringFormat("ReOrder failed tag=%s err=%d",tag,err2); Print(msg2);
+         if(_sendFailCount>=_sendFailLimit){
+            ReportError(StringFormat("OrderSend consecutive fail >=%d. last=%s",_sendFailLimit,msg2));
+            IsActive=false; JobId=-1; JobStatus="";
+         }
          return false;
       }
    }
@@ -341,13 +380,8 @@ void MaintainGridSlots(){
       IsActive=false; JobId=-1; JobStatus=""; return;
    }
 
-   double lot_risk  = CalcRiskLotCore();
-   double riskLot   = CalcRiskLotSafe();          // ★ 置き換え（安全ロット）
-   if(riskLot<=0){
-      Print("riskLot <= 0 -> skip grid maintenance.");
-      return;
-   }
-   // DebugLotContext(lot_risk, riskLot);            // 参考ログ（理論値と最終値）
+   // ★ Job確定時に固定したロットで、欠けた指値のみ補填
+   if(RtJobLot<=0){ Print("RtJobLot<=0 -> skip."); return; }
 
    double a=RtSLPrice,b=RtTPPrice,range=MathAbs(b-a),sign=(RtSide=="BUY"?+1.0:-1.0);
    double q1=NpFor(JobSymbol,a+sign*range*0.25), mid=NpFor(JobSymbol,a+sign*0.5*range), q3=NpFor(JobSymbol,a+sign*0.75*range);
@@ -363,8 +397,9 @@ void MaintainGridSlots(){
       int ptype=PendingTypeFor(ls[i].p,bid,ask);
       for(int k=1;k<=ls[i].kmax;k++){
          double tp_off=sign*(range*(k/4.0));
-         double sl_for=NpFor(JobSymbol,RtSLPrice), tp_for=NpFor(JobSymbol,ls[i].p+tp_off);
-         EnsureSlotPending(SlotTag(ls[i].n,k),ptype,ls[i].p,sl_for,tp_for,tol,tol,riskLot);
+         double sl_for=NpFor(JobSymbol,RtSLPrice);
+         double tp_for=NpFor(JobSymbol,ls[i].p+tp_off);
+         EnsureSlotPending(SlotTag(ls[i].n,k), ptype, ls[i].p, sl_for, tp_for, tol, tol, RtJobLot);
       }
    }
 }
@@ -373,13 +408,20 @@ void MaintainGridSlots(){
 int OnInit(){
    Print("Phantom EA starting. ACC=",ACCOUNT_ID," API=",API_BASE," SYMBOL=",Symbol());
    _lastClaimTry=_lastStatusPoll=0; JobId=-1; JobStatus=""; IsActive=false; PausedBoundary=false; _sendFailCount=0;
-   ClaimLatestPending(); return INIT_SUCCEEDED;
+   RtJobLot=0.0; RtPlannedSlots=6;
+   ClaimLatestPending();
+   return INIT_SUCCEEDED;
 }
+
 int start(){
    if(!IsActive){
-      if(TimeCurrent()-_lastClaimTry>=5){ _lastClaimTry=TimeCurrent(); ClaimLatestPending(); }
+      if(TimeCurrent()-_lastClaimTry>=5){
+         _lastClaimTry=TimeCurrent();
+         ClaimLatestPending();
+      }
       return 0;
    }
+
    if(TimeCurrent()-_lastStatusPoll>=5){
       _lastStatusPoll=TimeCurrent();
       if(FetchJobStatus() && JobStatus=="COMPLETED"){
@@ -390,12 +432,14 @@ int start(){
          return 0;
       }
    }
+
    if(!DirectionOK()){
       string msg=StringFormat("Direction violated: side=%s sl=%G tp=%G",RtSide,RtSLPrice,RtTPPrice);
       Print(msg); ReportError(msg);
       IsActive=false; JobId=-1; JobStatus="";
       return 0;
    }
+
    if(!PausedBoundary && PriceHitBoundary()){
       CancelAllPendingsAndCloseAllByMagic();
       PausedBoundary=true;
@@ -404,9 +448,13 @@ int start(){
       IsActive=false; JobId=-1; JobStatus="";
       return 0;
    }
+
    if(PausedBoundary) return 0;
-   MaintainGridSlots(); return 0;
+
+   MaintainGridSlots();
+   return 0;
 }
+
 void OnDeinit(const int reason){
    if(IsActive){
       CancelAllPendingsAndCloseAllByMagic();
