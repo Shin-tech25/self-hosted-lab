@@ -4,6 +4,7 @@
 //| - 境界到達またはサーバ指示で全クローズ                           |
 //| - 通知は Push のみ（NOTIFY_PUSH=true のとき）                    |
 //| - Job確定時にロットを一度だけ算出・固定、欠け分のみ補填          |
+//| - 近すぎエラーに対して最小距離スナップ＋軽い再試行を実装         |
 //+------------------------------------------------------------------+
 #property strict
 
@@ -161,6 +162,40 @@ double NormalizeLotToBroker(double lot){
    return NormalizeDouble(lot,2);
 }
 
+// --- broker constraints helpers -----------------------------------
+double PointFor(const string sym){ return MarketInfo(sym, MODE_POINT); }
+
+double MinStopDistancePoints(const string sym){
+   double pt   = PointFor(sym);
+   int    slvl = (int)MarketInfo(sym, MODE_STOPLEVEL);   // broker指定(ポイント)
+   return MathMax(0, slvl) * pt;
+}
+
+double FreezeDistancePoints(const string sym){
+   double pt    = PointFor(sym);
+   int    flvl  = (int)MarketInfo(sym, MODE_FREEZELEVEL);
+   return MathMax(0, flvl) * pt;
+}
+
+// ptypeに応じてentryを最小距離ぶん離す。返り値<=0 なら不成立（スキップ推奨）
+double SnapEntryToValidDistance(const string sym, int ptype, double desired){
+   RefreshRates();
+   double bid = MarketInfo(sym, MODE_BID);
+   double ask = MarketInfo(sym, MODE_ASK);
+   double mind= MinStopDistancePoints(sym);
+
+   if(ptype==OP_BUYLIMIT){
+      if(ask - desired < mind) desired = ask - mind;
+   }else if(ptype==OP_BUYSTOP){
+      if(desired - ask < mind) desired = ask + mind;
+   }else if(ptype==OP_SELLLIMIT){
+      if(desired - bid < mind) desired = bid + mind;
+   }else if(ptype==OP_SELLSTOP){
+      if(bid - desired < mind) desired = bid - mind;
+   }
+   return NpFor(sym, desired);
+}
+
 // 1ロットで「SL〜TPの1/4だけ逆行」したときの損失額（口座通貨）
 double PerLotLossForQuarterRange(){
    double ts=MarketInfo(JobSymbol,MODE_TICKSIZE), tv=MarketInfo(JobSymbol,MODE_TICKVALUE);
@@ -307,15 +342,41 @@ bool EnsureSlotPending(const string tag,int ptype,double entry,double sl,double 
    int tk=FindPendingByTag(tag);
    if(tk==-1){
       if(!CooldownPassed(tag)) return true;
-      int ntk=OrderSend(JobSymbol,ptype,desireLot,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
+
+      // ★最新レートで方向を再判定し、エントリー価格を最小距離へスナップ
+      RefreshRates();
+      double bid0=MarketInfo(JobSymbol,MODE_BID), ask0=MarketInfo(JobSymbol,MODE_ASK);
+      int ptype_now = PendingTypeFor(entry, bid0, ask0);
+      if(ptype_now != ptype) ptype = ptype_now;
+
+      double entry_adj = SnapEntryToValidDistance(JobSymbol, ptype, entry);
+      if(entry_adj <= 0){
+         TouchCooldown(tag);  // 近すぎて調整不能→一旦待つ
+         return false;
+      }
+
+      int ntk=OrderSend(JobSymbol,ptype,desireLot,entry_adj,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
       if(ntk>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
 
-      // フォールバック：証拠金不足（ERR_NOT_ENOUGH_MONEY=134）の場合、今回のスロットだけ安全縮小
       int err=GetLastError();
+
+      // 129/130/136/138/146 は1回だけ軽い再試行
+      bool retryable = (err==129 || err==130 || err==136 || err==138 || err==146);
+      if(retryable){
+         RefreshRates(); Sleep(TICK_WAIT_MS);
+         double entry_retry = SnapEntryToValidDistance(JobSymbol, ptype, entry);
+         if(entry_retry>0){
+            int ntk2=OrderSend(JobSymbol, ptype, desireLot, entry_retry, RtSlippage, sl, tp, tag, RtMagic, 0, clrDodgerBlue);
+            if(ntk2>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
+            err = GetLastError();
+         }
+      }
+
+      // フォールバック：資金不足（134）の場合は今回スロットだけ安全縮小
       if(err==134){
          double one_cap = CapLotByMargin(desireLot, 1);
          if(one_cap>0 && one_cap<desireLot){
-            int rt=OrderSend(JobSymbol,ptype,one_cap,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
+            int rt=OrderSend(JobSymbol,ptype,one_cap,entry_adj,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
             if(rt>0){
                _sendFailCount=0; TouchCooldown(tag);
                Print(StringFormat("fallback lot shrink tag=%s %.2f->%.2f", tag, desireLot, one_cap));
@@ -340,19 +401,32 @@ bool EnsureSlotPending(const string tag,int ptype,double entry,double sl,double 
    bool priceOff=(MathAbs(cp-entry)>tol_price), slOff=(MathAbs(csl-sl)>tol_price), tpOff=(MathAbs(ctp-tp)>tol_tp);
 
    if(priceOff||slOff||tpOff){
-      if(!OrderModify(tk,entry,sl,tp,0,clrDodgerBlue)){
-         // 再発注（cooldown尊重）
+      // 再スナップしてから modify を試みる
+      double entry_mod = SnapEntryToValidDistance(JobSymbol, ptype, entry);
+      if(entry_mod<=0) return false;
+
+      if(!OrderModify(tk,entry_mod,sl,tp,0,clrDodgerBlue)){
+         int errm=GetLastError();
+
+         // 軽い再試行（129/130/136/138/146）
+         if(errm==129 || errm==130 || errm==136 || errm==138 || errm==146){
+            RefreshRates(); Sleep(TICK_WAIT_MS);
+            entry_mod = SnapEntryToValidDistance(JobSymbol, ptype, entry);
+            if(entry_mod>0 && OrderModify(tk, entry_mod, sl, tp, 0, clrDodgerBlue)) return true;
+         }
+
+         // だめなら削除→再発注（cooldown尊重）
          if(!CooldownPassed(tag)) return false;
          if(!OrderDelete(tk)) return false;
 
-         int ntk=OrderSend(JobSymbol,ptype,desireLot,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
+         int ntk=OrderSend(JobSymbol,ptype,desireLot,entry_mod,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
          if(ntk>0){ _sendFailCount=0; TouchCooldown(tag); return true; }
 
          int err2=GetLastError();
          if(err2==134){
             double one_cap = CapLotByMargin(desireLot, 1);
             if(one_cap>0 && one_cap<desireLot){
-               int rt=OrderSend(JobSymbol,ptype,one_cap,entry,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
+               int rt=OrderSend(JobSymbol,ptype,one_cap,entry_mod,RtSlippage,sl,tp,tag,RtMagic,0,clrDodgerBlue);
                if(rt>0){
                   _sendFailCount=0; TouchCooldown(tag);
                   Print(StringFormat("fallback lot shrink (reorder) tag=%s %.2f->%.2f", tag, desireLot, one_cap));
