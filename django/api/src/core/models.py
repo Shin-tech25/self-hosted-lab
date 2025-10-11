@@ -1,10 +1,17 @@
 import uuid
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, UniqueConstraint
 from django.utils import timezone
 from .utils.magic import generate_magic
 from .utils.symbols import SYMBOL_CHOICES
+
+def jst_localdate():
+    return timezone.localdate()
+
+def jst_minutes_now():
+    dt = timezone.localtime()
+    return dt.hour * 60 + dt.minute
 
 class Account(models.Model):
     class Broker(models.TextChoices):
@@ -87,7 +94,7 @@ class ClosedPosition(models.Model):
 
     class Meta:
         db_table  = "closed_positions"
-        ordering  = ["-close_time", "-id"]
+        ordering  = ["-id"]
         constraints = [
             # 差分同期のための一意制約
             models.UniqueConstraint(
@@ -125,7 +132,7 @@ class PhantomJob(models.Model):
     magic = models.BigIntegerField(default=generate_magic, unique=True, db_index=True)
 
     account = models.ForeignKey("Account", on_delete=models.PROTECT,
-                                related_name="phantom_jobs", null=True, blank=True, db_index=True)
+                                related_name="phantom_jobs", null=False, blank=False, db_index=True)
     
     symbol = models.CharField(
         max_length=32,
@@ -151,6 +158,8 @@ class PhantomJob(models.Model):
 
     status      = models.CharField(max_length=12, choices=Status.choices,
                                    default=Status.PENDING, db_index=True)
+    queue_date = models.DateField(default=jst_localdate, db_index=True)
+    queue_minutes = models.PositiveSmallIntegerField(default=jst_minutes_now, db_index=True)
     started_at  = models.DateTimeField(null=True, blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
 
@@ -163,6 +172,16 @@ class PhantomJob(models.Model):
     class Meta:
         constraints = [
             # PENDING のときは started_at/finished_at は NULL でなければならない
+            # 1アカウント・1日につき1レコード（= 1発）
+            UniqueConstraint(
+                fields=["account", "queue_date"],
+                name="uq_phantomjob_one_per_account_per_day",
+            ),
+            # 時間帯制約：JST 08:30〜22:30（含む）
+            models.CheckConstraint(
+                name="ck_phantomjob_queue_minutes_in_window",
+                check=Q(queue_minutes__gte=510) & Q(queue_minutes__lte=1350),
+            ),
             models.CheckConstraint(
                 name="phantomjob_pending_requires_null_times",
                 check=(
@@ -194,7 +213,7 @@ class PhantomJob(models.Model):
         new = self.status
 
         allowed = {
-            PhantomJob.Status.PENDING:   {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.ERROR},
+            PhantomJob.Status.PENDING:   {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.COMPLETED, PhantomJob.Status.ERROR},
             PhantomJob.Status.RUNNING:   {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.COMPLETED, PhantomJob.Status.ERROR},
             PhantomJob.Status.COMPLETED: {PhantomJob.Status.PENDING, PhantomJob.Status.COMPLETED},
             PhantomJob.Status.ERROR:     {PhantomJob.Status.PENDING, PhantomJob.Status.ERROR},

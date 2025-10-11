@@ -111,7 +111,8 @@ class PhantomJobAdmin(admin.ModelAdmin):
         "id", "status", "account_id", "symbol", "side", "sl_price", "tp_price",
         "use_risk_lot", "risk_percent", "lots_fixed", "max_lot_cap",
         "slippage", "tol_price_pips", "cooldown_sec",
-        "magic", "started_at", "finished_at", "error_detail", "failed_at", "created_at",
+        "magic", "queue_date", "queue_time_display", "started_at", "finished_at",
+        "error_detail", "failed_at", "created_at",
     )
     list_filter = (
         ("finished_at", DateTimeRangeFilter),
@@ -123,3 +124,7 @@ class PhantomJobAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     readonly_fields = ("id", "created_at", "updated_at",)
 
+    def queue_time_display(self, obj):
+        m = obj.queue_minutes or 0
+        return f"{m//60:02d}:{m%60:02d} JST"
+    queue_time_display.short_description = "Queued (JST)"

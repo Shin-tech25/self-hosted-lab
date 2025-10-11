@@ -326,16 +326,30 @@ class QuickOrderForm(forms.Form):
         sl = cleaned.get("sl")
         tp = cleaned.get("tp")
 
-        # ① どちらか未入力ならエラー
+        # === ① 入力チェック ===
         if sl is None or tp is None:
             self.add_error(None, "SLとTPの両方を入力してください。")
-            return cleaned  # side 判定はスキップ
-        # ② 同値ならエラー
+
         if sl == tp:
             self.add_error("tp", "SLとTPが同値です。どちらかを離してください。")
-            return cleaned
-        # ③ side 判定（有効時のみ）
-        cleaned["side"] = "BUY" if sl < tp else "SELL"
+
+        # === ② side 判定（エラーがなければのみ設定）===
+        if not self.errors:
+            cleaned["side"] = "BUY" if sl < tp else "SELL"
+
+        # === ③ 時間帯チェック（08:30〜22:30）===
+        now_local = timezone.localtime()
+        minutes = now_local.hour * 60 + now_local.minute
+        if not (510 <= minutes <= 1350):
+            self.add_error(None, "キュー可能時間は JST 08:30〜22:30 です。")
+
+        # === ④ 1日1発 制約（JST基準のqueue_dateと揃える）===
+        account = cleaned.get("account")
+        if account:
+            today = timezone.localdate()
+            if PhantomJob.objects.filter(account=account, queue_date=today).exists():
+                self.add_error(None, f"本日（{today}）は既に {account} でジョブをキュー済みです。")
+
         return cleaned
 
 
