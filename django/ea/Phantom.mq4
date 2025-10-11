@@ -15,7 +15,7 @@
 //| Contact:     (add your email or URL)                             |
 //| Repository:  (add your repo URL)                                 |
 //|                                                                  |
-//| Version:     1.2.0                                               |
+//| Version:     1.200                                               |
 //| Build Date:  2025-10-11                                          |
 //| Platform:    MetaTrader 4 (MQL4)                                 |
 //| Symbol Mode: Works with 3/5-digit and JPY 2/3-digit quotes       |
@@ -25,7 +25,7 @@
 //| @file        Phantom.mq4                                         |
 //| @brief       Grid trading EA coordinated by a Django backend.    |
 //| @author      Shin Mikami                                         |
-//| @version     1.2.0                                               |
+//| @version     1.200                                               |
 //| @date        2025-10-11                                          |
 //|                                                                  |
 //| Requirements:                                                    |
@@ -67,7 +67,7 @@
 
 #property copyright "Shin Mikami"
 #property link      "(add your email or URL)"
-#property version   "1.2.0"
+#property version   "1.200"
 
 #property strict
 
