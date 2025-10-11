@@ -1,11 +1,74 @@
 //+------------------------------------------------------------------+
-//| Phantom.mq4  (API-driven Grid EA, fixed job-lot & safe fallback) |
-//| - Djangoと連携: claim / status poll / complete / error           |
-//| - 境界到達またはサーバ指示で全クローズ                           |
-//| - 通知は Push のみ（NOTIFY_PUSH=true のとき）                    |
-//| - Job確定時にロットを一度だけ算出・固定、欠け分のみ補填          |
-//| - 近すぎエラーに対して最小距離スナップ＋軽い再試行を実装         |
+//| Phantom.mq4                                                      |
+//| API-driven Grid EA (fixed job-lot & safe fallback)               |
+//|                                                                  |
+//| Description:                                                     |
+//| - Integrates with Django: claim / status poll / complete / error |
+//| - Closes all positions on boundary hit or when server requests   |
+//| - Push notifications (when NOTIFY_PUSH=true)                     |
+//| - Computes & fixes job lot size once per job; fills only missing |
+//|   pending orders                                                 |
+//| - Handles "too close" broker errors via min-distance snap + mild |
+//|   retry                                                          |
+//|                                                                  |
+//| Developer:   Shin Mikami                                         |
+//| Contact:     (add your email or URL)                             |
+//| Repository:  (add your repo URL)                                 |
+//|                                                                  |
+//| Version:     1.2.0                                               |
+//| Build Date:  2025-10-11                                          |
+//| Platform:    MetaTrader 4 (MQL4)                                 |
+//| Symbol Mode: Works with 3/5-digit and JPY 2/3-digit quotes       |
+//|                                                                  |
+//| License:     MIT License (SPDX-License-Identifier: MIT)          |
+//|                                                                  |
+//| @file        Phantom.mq4                                         |
+//| @brief       Grid trading EA coordinated by a Django backend.    |
+//| @author      Shin Mikami                                         |
+//| @version     1.2.0                                               |
+//| @date        2025-10-11                                          |
+//|                                                                  |
+//| Requirements:                                                    |
+//| - MT4 terminal configured for WebRequest to API_BASE             |
+//|   (Tools -> Options -> Expert Advisors -> Allow WebRequest)      |
+//| - If EMAIL_MODE="TERMINAL": MT4 Mail settings configured         |
+//|   (Tools -> Options -> Email; for Gmail use App Password)        |
+//| - If EMAIL_MODE="API": Django endpoint /notify/email accepting   |
+//|   {subject, body, to[]} and sending mail server-side             |
+//|                                                                  |
+//| Inputs Overview:                                                 |
+//| - API_BASE (string): Base URL for the Django API                 |
+//| - API_KEY  (string): "Authorization: Api-Key" token              |
+//| - ACCOUNT_ID (string): Logical account identifier                |
+//| - NOTIFY_PUSH (bool): Enable MT4 Push notifications              |
+//| - NOTIFY_EMAIL (bool): Send email on start/end/error             |
+//| - EMAIL_MODE (string): "TERMINAL" or "API"                       |
+//| - EMAIL_TO_API (string): CSV recipients (API mode only)          |
+//| - EMAIL_SUBJECT_PREFIX (string): Email subject prefix            |
+//| - MARGIN_SAFETY (double): FreeMargin usage cap (0.90–0.98)       |
+//| - TICK_RETRIES / TICK_WAIT_MS: Tick readiness wait parameters    |
+//|                                                                  |
+//| Safety Notes:                                                    |
+//| - Direction validation enforces BUY: TP>SL, SELL: TP<SL          |
+//| - Margin cap limits per-slot size by required margin             |
+//| - Mild retry on transient broker errors (129/130/136/138/146)    |
+//| - Fallback lot shrink on insufficient margin (134)               |
+//|                                                                  |
+//| Change Log:                                                      |
+//| - 1.2.0 (2025-10-11): Email notifications (TERMINAL/API modes),  |
+//|   unified NOTIFY_EMAIL flag, JSON escaping helpers, minor polish |
+//| - 1.1.0: Fixed job-lot computation & margin cap per grid slots   |
+//| - 1.0.0: Initial public version                                  |
+//|                                                                  |
+//| Disclaimer:                                                      |
+//| This EA is provided "as is" without warranties of any kind.      |
+//| Use at your own risk. Test thoroughly on demo before live use.   |
 //+------------------------------------------------------------------+
+
+#property copyright "Shin Mikami"
+#property link      "(add your email or URL)"
+#property version   "1.2.0"
+
 #property strict
 
 // ======================== Inputs ==================================
@@ -19,6 +82,11 @@ input double MARGIN_SAFETY = 0.95;                    // 0.90〜0.98 推奨
 // Tick準備待ちパラメータ
 input int    TICK_RETRIES  = 15;                      // 15回
 input int    TICK_WAIT_MS  = 200;                     // 200ms × 15 = 最大3秒
+
+input bool   NOTIFY_EMAIL = true;               // メール通知（開始/終了/エラーの全て）
+input string EMAIL_MODE   = "TERMINAL";         // "TERMINAL" or "API"
+input string EMAIL_TO_API = "";                 // APIモード時のみ: 宛先(カンマ区切り)
+input string EMAIL_SUBJECT_PREFIX = "[Phantom]";// 件名プリフィクス
 
 // ===================== Runtime Params =============================
 int     JobId=-1; string JobStatus=""; string JobSymbol="";
@@ -110,21 +178,92 @@ bool JsonGetBool(string j,string k,bool dv=false){
    int p=c+1; while(p<StringLen(j) && (j[p]==' '||j[p]=='\t'||j[p]=='\r'||j[p]=='\n')) p++;
    if(StringSubstr(j,p,4)=="true") return true; if(StringSubstr(j,p,5)=="false") return false; return dv;
 }
+string JsonEscape(const string s) {
+   string t = s;
+   StringReplace(t, "\\", "\\\\");
+   StringReplace(t, "\"", "\\\"");
+   StringReplace(t, "\r", "\\r");
+   StringReplace(t, "\n", "\\n");
+   return t;
+}
+
+// "a,b,c" -> ["a","b","c"] のJSON配列文字列を作る簡易化
+string CsvToJsonArray(const string csv) {
+   string c = _Trim(csv);
+   if(c=="") return "[]";
+   // カンマ分割（簡易）
+   string out = "[\"";
+   string tmp = c;
+   StringReplace(tmp, "\"", "\\\""); // 念のため
+   StringReplace(tmp, ",", "\",\"");
+   out += tmp + "\"]";
+   return out;
+}
 
 // ======================= Notify (Push only) ========================
 void NotifyStart(){
-   if(!NOTIFY_PUSH) return;
-   SendNotification(StringFormat("[Phantom] START job=%d %s %s SL=%s TP=%s magic=%d",
-      JobId, JobSymbol, RtSide, _fmt5(RtSLPrice), _fmt5(RtTPPrice), RtMagic));
+   if(NOTIFY_PUSH){
+      SendNotification(StringFormat("[Phantom] START job=%d %s %s SL=%s TP=%s magic=%d",
+         JobId, JobSymbol, RtSide, _fmt5(RtSLPrice), _fmt5(RtTPPrice), RtMagic));
+   }
+   if(NOTIFY_EMAIL){
+      string body = StringFormat(
+         "Job STARTED\njob=%d\nsymbol=%s\nside=%s\nSL=%s\nTP=%s\nmagic=%d\n",
+         JobId, JobSymbol, RtSide, _fmt5(RtSLPrice), _fmt5(RtTPPrice), RtMagic);
+      SendEmail("START", body);
+   }
 }
 void NotifyEnd(const string reason){
-   if(!NOTIFY_PUSH) return;
-   SendNotification(StringFormat("[Phantom] END(%s) job=%d %s %s magic=%d",
-      reason, JobId, JobSymbol, RtSide, RtMagic));
+   if(NOTIFY_PUSH){
+      SendNotification(StringFormat("[Phantom] END(%s) job=%d %s %s magic=%d",
+         reason, JobId, JobSymbol, RtSide, RtMagic));
+   }
+   if(NOTIFY_EMAIL){
+      string body = StringFormat(
+         "Job ENDED (%s)\njob=%d\nsymbol=%s\nside=%s\nmagic=%d\n",
+         reason, JobId, JobSymbol, RtSide, RtMagic);
+      SendEmail(StringFormat("END(%s)", reason), body);
+   }
 }
 void NotifyError(const string detail){
-   if(!NOTIFY_PUSH) return;
-   SendNotification(StringFormat("[Phantom] ERROR job=%d %s", JobId, detail));
+   if(NOTIFY_PUSH){
+      SendNotification(StringFormat("[Phantom] ERROR job=%d %s", JobId, detail));
+   }
+   if(NOTIFY_EMAIL){
+      string body = StringFormat(
+         "Job ERROR\njob=%d\nsymbol=%s\ndetail=%s\n",
+         JobId, JobSymbol, detail);
+      SendEmail("ERROR", body);
+   }
+}
+
+// ======================= Email Utils ===============================
+bool EmailSendTerminal(const string subject, const string body) {
+   ResetLastError();
+   bool ok = SendMail(subject, body);   // 受信者はMT4側設定のTo
+   if(!ok) Print("SendMail failed. err=", GetLastError());
+   return ok;
+}
+
+// Django経由 (APIモード) … /notify/email は例（サーバ側で実装）
+bool EmailSendViaAPI(const string subject, const string body, const string to_csv) {
+   string payload = StringFormat(
+      "{\"subject\":\"%s\",\"body\":\"%s\",\"to\":%s}",
+      JsonEscape(subject), JsonEscape(body), CsvToJsonArray(to_csv)
+   );
+   string resp;
+   bool ok = HttpPOST("/notify/email", payload, resp);
+   if(!ok) Print("EmailSendViaAPI failed resp=", resp);
+   return ok;
+}
+
+// フラグ判定はしない（常に送信）／呼び出し側で NOTIFY_EMAIL を見る
+bool SendEmail(const string subject, const string body) {
+   string subj = EMAIL_SUBJECT_PREFIX + " " + subject;
+   if(EMAIL_MODE=="TERMINAL") return EmailSendTerminal(subj, body);
+   else if(EMAIL_MODE=="API") return EmailSendViaAPI(subj, body, EMAIL_TO_API);
+   Print("Unknown EMAIL_MODE=", EMAIL_MODE);
+   return false;
 }
 
 // ======================= Trade helpers =============================
