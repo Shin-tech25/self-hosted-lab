@@ -337,13 +337,19 @@ class QuickOrderForm(forms.Form):
         if not self.errors:
             cleaned["side"] = "BUY" if sl < tp else "SELL"
 
-        # === ③ 時間帯チェック（08:30〜22:30）===
+        # === ③ 土日禁止チェック ===
+        today_local = timezone.localdate()
+        # weekday(): 月=0..日=6 → 5(土),6(日) は不可
+        if today_local.weekday() >= 5:
+            self.add_error(None, "土日（Sat/Sun）はジョブをキューできません。")
+
+        # === ④ 時間帯チェック（08:30〜22:30）===
         now_local = timezone.localtime()
         minutes = now_local.hour * 60 + now_local.minute
         if not (510 <= minutes <= 1350):
             self.add_error(None, "キュー可能時間は JST 08:30〜22:30 です。")
 
-        # === ④ 1日1発 制約（JST基準のqueue_dateと揃える）===
+        # === ⑤ 1日1発 制約（JST基準のqueue_dateと揃える）===
         account = cleaned.get("account")
         if account:
             today = timezone.localdate()

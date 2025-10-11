@@ -189,6 +189,12 @@ class PhantomJob(models.Model):
                     | ~Q(status="PENDING")
                 ),
             ),
+            # 平日のみ（週末＝日曜(1)・土曜(7)を除外）
+            # Djangoの week_day ルックアップは多くのDBで「日曜=1, …, 土曜=7」
+            models.CheckConstraint(
+                name="ck_phantomjob_weekday_only",
+                check=~Q(queue_date__week_day__in=(1, 7)),
+            ),
             # COMPLETED のときは finished_at が必須（あるいは claim/complete で必ず埋める運用）
             # models.CheckConstraint(
             #     name="phantomjob_completed_requires_finished_at",
@@ -204,6 +210,15 @@ class PhantomJob(models.Model):
     # ---- モデルレベルの状態遷移ガード（Admin等も含め横断的に効かせる） ----
     def clean(self):
         super().clean()
+
+        # 時間帯チェック（08:30〜22:30）
+        if self.queue_minutes < 510 or self.queue_minutes > 1350:
+            raise ValidationError({"queue_minutes": "キュー可能時間は JST 08:30〜22:30 です。"})
+
+        # Pythonのweekday(): 月=0..日=6 なので 5(土)・6(日)を禁止
+        if self.queue_date and self.queue_date.weekday() >= 5:
+            raise ValidationError({"queue_date": "土日（Sat/Sun）はジョブをキューできません。"})
+
         # 既存レコードなら「以前の状態」を取得
         if self.pk:
             prev = PhantomJob.objects.only("status").get(pk=self.pk).status
