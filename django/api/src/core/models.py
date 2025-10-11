@@ -213,11 +213,11 @@ class PhantomJob(models.Model):
 
         # 時間帯チェック（08:30〜22:30）
         if self.queue_minutes < 510 or self.queue_minutes > 1350:
-            raise ValidationError({"queue_minutes": "キュー可能時間は JST 08:30〜22:30 です。"})
+            raise ValidationError({"queue_minutes": "Jobs can be submitted between 08:30 and 22:30 JST."})
 
         # Pythonのweekday(): 月=0..日=6 なので 5(土)・6(日)を禁止
         if self.queue_date and self.queue_date.weekday() >= 5:
-            raise ValidationError({"queue_date": "土日（Sat/Sun）はジョブをキューできません。"})
+            raise ValidationError({"queue_date": "Jobs cannot be submitted on weekends."})
 
         # 既存レコードなら「以前の状態」を取得
         if self.pk:
@@ -234,10 +234,10 @@ class PhantomJob(models.Model):
             PhantomJob.Status.ERROR:     {PhantomJob.Status.PENDING, PhantomJob.Status.ERROR},
         }
         if new not in allowed[prev]:
-            raise ValidationError({"status": f"{prev} から {new} への遷移は禁止です。"})
+            raise ValidationError({"status": f"The transition from {prev} to {new} is not allowed."})
         # 追加整合性（保険）
         if new == PhantomJob.Status.PENDING and (self.started_at or self.finished_at):
-            raise ValidationError({"status": "PENDING のとき started_at/finished_at は NULL である必要があります。"})
+            raise ValidationError({"status": "When the status is PENDING, both started_at and finished_at must be NULL."})
 
     def save(self, *args, **kwargs):
         """

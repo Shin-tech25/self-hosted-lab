@@ -315,10 +315,10 @@ class PhantomJobViewSet(viewsets.ModelViewSet):
         return Response({"ok": True}, status=status.HTTP_200_OK)
 
 class QuickOrderForm(forms.Form):
-    account = forms.ModelChoiceField(label="口座", queryset=Account.objects.all().order_by("account_id"))
-    symbol  = forms.ChoiceField(label="通貨ペア", choices=SYMBOL_CHOICES)
-    sl      = forms.FloatField(label="SL（損切り）")
-    tp      = forms.FloatField(label="TP（利確）")
+    account = forms.ModelChoiceField(label="Account", queryset=Account.objects.all().order_by("account_id"))
+    symbol  = forms.ChoiceField(label="Symbol", choices=SYMBOL_CHOICES)
+    sl      = forms.FloatField(label="SL Price")
+    tp      = forms.FloatField(label="TP Price")
     #risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
 
     def clean(self):
@@ -328,10 +328,10 @@ class QuickOrderForm(forms.Form):
 
         # === ① 入力チェック ===
         if sl is None or tp is None:
-            self.add_error(None, "SLとTPの両方を入力してください。")
+            self.add_error(None, "Both SL and TP are required.")
 
         if sl == tp:
-            self.add_error("tp", "SLとTPが同値です。どちらかを離してください。")
+            self.add_error("tp", "SL and TP values are the same. Please set a different distance between them.")
 
         # === ② side 判定（エラーがなければのみ設定）===
         if not self.errors:
@@ -341,20 +341,20 @@ class QuickOrderForm(forms.Form):
         today_local = timezone.localdate()
         # weekday(): 月=0..日=6 → 5(土),6(日) は不可
         if today_local.weekday() >= 5:
-            self.add_error(None, "土日（Sat/Sun）はジョブをキューできません。")
+            self.add_error(None, "Jobs cannot be submitted on weekends.")
 
         # === ④ 時間帯チェック（08:30〜22:30）===
         now_local = timezone.localtime()
         minutes = now_local.hour * 60 + now_local.minute
         if not (510 <= minutes <= 1350):
-            self.add_error(None, "キュー可能時間は JST 08:30〜22:30 です。")
+            self.add_error(None, "Jobs can be submitted between 08:30 and 22:30 JST.")
 
         # === ⑤ 1日1発 制約（JST基準のqueue_dateと揃える）===
         account = cleaned.get("account")
         if account:
             today = timezone.localdate()
             if PhantomJob.objects.filter(account=account, queue_date=today).exists():
-                self.add_error(None, f"本日（{today}）は既に {account} でジョブをキュー済みです。")
+                self.add_error(None, f"A job has already been queued today ({today}) for {account}.")
 
         return cleaned
 
@@ -384,5 +384,5 @@ class QuickOrderView(FormView):
             risk_percent=RISK_PERCENT_DEFAULT,
             status=PhantomJob.Status.PENDING,
         )
-        messages.success(self.request, f"発注ジョブを作成しました（{side} {symbol}）")
+        messages.success(self.request, f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT}).")
         return redirect("order")

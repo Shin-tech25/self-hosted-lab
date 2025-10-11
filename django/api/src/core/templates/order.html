@@ -173,13 +173,13 @@
 
     <div class="card">
       <h2>Quick Order</h2>
-      <div class="sub">SL / TP から自動で方向（BUY / SELL）を判定します。</div>
+      <div class="sub">The trade direction (BUY / SELL) is automatically determined from the SL and TP values.</div>
 
       <form method="post" onsubmit="this.querySelector('.submit').disabled = true;">
         {% csrf_token %}
 
         <div class="field {% if form.account.errors %}has-error{% endif %}">
-          <label for="{{ form.account.id_for_label }}">口座ID</label>
+          <label for="{{ form.account.id_for_label }}">Account ID</label>
           {{ form.account }}
           {% if form.account.errors %}
             <div class="err">
@@ -189,7 +189,7 @@
         </div>
 
         <div class="field {% if form.symbol.errors %}has-error{% endif %}">
-          <label for="{{ form.symbol.id_for_label }}">通貨ペア</label>
+          <label for="{{ form.symbol.id_for_label }}">Symbol</label>
           {{ form.symbol }}
           {% if form.symbol.errors %}
             <div class="err">
@@ -199,7 +199,7 @@
         </div>
 
         <div class="field {% if form.sl.errors %}has-error{% endif %}">
-          <label for="{{ form.sl.id_for_label }}">SL（損切り価格）</label>
+          <label for="{{ form.sl.id_for_label }}">SL Price</label>
           {{ form.sl }}
           {% if form.sl.errors %}
             <div class="err">
@@ -209,7 +209,7 @@
         </div>
 
         <div class="field {% if form.tp.errors %}has-error{% endif %}">
-          <label for="{{ form.tp.id_for_label }}">TP（利確価格）</label>
+          <label for="{{ form.tp.id_for_label }}">TP Price</label>
           {{ form.tp }}
           {% if form.tp.errors %}
             <div class="err">
@@ -218,11 +218,10 @@
           {% endif %}
         </div>
 
-        <button type="submit" class="submit">発注ジョブを作成</button>
+        <button type="submit" class="submit">Submit Phantom Job</button>
 
         <p class="note">
-          ルール：SL &lt; TP → BUY / SL &gt; TP → SELL。<br>
-          ロットは口座残高 × Risk％ から EA 側で自動計算します。
+          Lot size is automatically calculated on the EA side based on account balance * Risk%.
         </p>
       </form>
     </div>
