@@ -6,69 +6,98 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Quick Order</title>
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#ffffff">
   <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
   <link rel="shortcut icon" href="{% static 'favicon.png' %}">
   <link rel="apple-touch-icon" href="{% static 'favicon.png' %}">
   <style>
     :root{
-      --bg:#0b1020;          /* 背景(ダーク紺) */
-      --card:#111827;        /* カード(濃紺)  */
-      --text:#e5e7eb;        /* 文字(薄灰)    */
-      --muted:#9ca3af;
-      --primary:#60a5fa;     /* アクセント     */
-      --primary-600:#3b82f6;
-      --ok:#10b981;
+      /* ===== Light palette ===== */
+      --bg:#f7f8fb;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#6b7280;
+      --line:#e5e7eb;
+      --ring:0 0 0 4px rgba(59,130,246,.18);
+
+      --primary:#2563eb;
+      --primary-600:#1d4ed8;
+      --ok:#16a34a;
       --ng:#ef4444;
-      --ring:0 0 0 3px rgba(96,165,250,.35);
-      --shadow:0 10px 25px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.2);
+
+      --shadow:0 10px 30px rgba(16,24,40,.08), 0 2px 8px rgba(16,24,40,.06);
       --radius:14px;
+
+      --fs-body:16px;
+      --fs-label:13px;
+      --fs-small:12px;
+      --fs-h:20px;
     }
 
     html,body{height:100%}
     body{
-      margin:0; padding:24px;
+      margin:0; padding:28px;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', Meiryo, 'Apple Color Emoji', 'Segoe UI Emoji';
-      background: radial-gradient(1200px 800px at 15% -10%, #1f2937 0%, var(--bg) 45%, #060914 100%);
+      background:
+        radial-gradient(1200px 800px at 15% -10%, #eef2ff 0%, #f3f4f6 40%, var(--bg) 100%);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      font-size: var(--fs-body);
     }
 
-    .wrap{max-width:640px; margin:0 auto;}
+    .wrap{max-width:720px; margin:0 auto;}
 
     /* フラッシュメッセージ */
     .msgs{margin:0 0 16px}
     .msg{
       border-radius:12px; padding:12px 14px; margin:10px 0;
-      background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      background:#fff; border:1px solid var(--line);
+      box-shadow: 0 2px 6px rgba(15,23,42,.04);
       font-size:14px; line-height:1.5;
     }
-    .msg.ok{ border-color: rgba(16,185,129,.5); background: rgba(16,185,129,.1); }
-    .msg.ng{ border-color: rgba(239,68,68,.5);  background: rgba(239,68,68,.08); }
+    .msg.ok{ border-color: rgba(22,163,74,.35); background: #f0fdf4; }
+    .msg.ng{ border-color: rgba(239,68,68,.35); background: #fef2f2; }
 
     /* カード */
     .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-      border: 1px solid rgba(255,255,255,.12);
+      background: var(--card);
+      border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 22px;
     }
     h2{
-      margin:0 0 14px; font-weight:700; letter-spacing:.02em;
+      margin:0 0 6px; font-weight:700; letter-spacing:.02em;
+      font-size: var(--fs-h);
     }
     .sub{
-      margin:-4px 0 14px; color:var(--muted); font-size:12px;
+      margin:0 0 18px; color:var(--muted); font-size:var(--fs-small);
     }
+
+    /* マインドセットノート */
+    .mindset{
+      display:flex; gap:12px; align-items:flex-start;
+      padding:14px 16px; margin:0 0 16px;
+      background: linear-gradient(180deg,#f8fafc,#f9fafb);
+      border:1px dashed #dbe2ea; border-radius:12px;
+      color:#334155; font-size:14px; line-height:1.6;
+    }
+    .mindset .dot{
+      width:8px; height:8px; border-radius:50%; margin-top:6px;
+      background: conic-gradient(from 0turn,#22c55e 0 25%, #e5e7eb 0 100%);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.15);
+      flex:0 0 auto;
+    }
+    .mindset strong{ color:#0f172a; }
 
     /* フォーム */
     form{ margin-top:8px; }
     .field{ margin: 14px 0; }
 
     label{
-      display:block; font-size:13px; color: var(--muted);
-      margin: 0 0 6px;
+      display:block; font-size:var(--fs-label); color: #374151;
+      margin: 0 0 6px; font-weight:600;
     }
 
     select,
@@ -82,76 +111,159 @@
       display:block;
       padding:12px 14px;
       border-radius:12px;
-      border:1px solid rgba(255,255,255,.18);
-      background: rgba(17,24,39,.55);
+      border:1px solid var(--line);
+      background:#fff;
       color: var(--text);
       font-size:16px;
-      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .04s ease;
       outline: none;
       appearance:none;
       -webkit-appearance:none;
+    }
+    select:hover,
+    input:hover{
+      border-color:#cfd8e3;
     }
     select:focus,
     input:focus{
       border-color: var(--primary);
       box-shadow: var(--ring);
-      background: rgba(17,24,39,.75);
+      background:#fff;
     }
     @media (max-width:420px){
       select,input{ font-size:16px; }
     }
 
+    /* ====== Animated Submit Button ====== */
     .submit{
+      --btn-fg:#0b1220;
+      --btn-bg:linear-gradient(180deg, #ffffff, #f2f4f7);
+      --btn-border:#d1d5db;
+
+      position: relative;
       width:100%;
       box-sizing:border-box;
-      padding:12px 16px;
+      padding:14px 16px;
       margin-top:18px;
-      border:0; border-radius:12px;
-      background: linear-gradient(180deg, var(--primary), var(--primary-600));
-      color:#fff; font-weight:700; font-size:16px; letter-spacing:.02em;
+      border-radius:12px;
+      border:1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      font-weight:700; font-size:16px; letter-spacing:.02em;
       cursor:pointer;
-      transition: transform .06s ease, filter .2s ease, opacity .2s ease;
+      transition: transform .06s ease, filter .2s ease, box-shadow .2s ease, border-color .2s ease;
+      overflow:hidden;
+      isolation:isolate;
     }
-    .submit:hover{ filter: brightness(1.02); }
+    .submit span{ position:relative; z-index:2; display:inline-block; transition: transform .2s ease; }
+
+    .submit::before{
+      content:'';
+      position:absolute; inset:0;
+      background: radial-gradient(200% 60% at 50% -30%, rgba(59,130,246,.12), transparent 60%),
+                  radial-gradient(120% 70% at 100% 120%, rgba(34,197,94,.12), transparent 60%);
+      opacity:0; transform: scale(.9);
+      transition: opacity .25s ease, transform .25s ease;
+      z-index:1;
+      pointer-events:none;
+    }
+    .submit::after{
+      content:'';
+      position:absolute; inset:0;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.08);
+      transition: transform .24s ease, opacity .24s ease, border-color .24s ease;
+      z-index:1;
+      pointer-events:none;
+    }
+    .submit:hover{
+      box-shadow: 0 10px 20px rgba(2,6,23,.08), 0 2px 8px rgba(2,6,23,.06);
+      border-color:#cbd5e1;
+    }
+    .submit:hover::before{ opacity:1; transform: scale(1); }
+    .submit:hover::after{ opacity:.7; transform: scale(1.02); }
+    .submit:hover span{ transform: translateY(-1px); }
     .submit:active{ transform: translateY(1px); }
-    .submit[disabled]{ opacity:.6; cursor:not-allowed; }
+    .submit[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none; }
+
+    @media (prefers-reduced-motion: reduce){
+      .submit, .submit::before, .submit::after, .submit span{
+        transition: none !important;
+        animation: none !important;
+      }
+    }
 
     .note{
-      margin-top:10px; color: var(--muted); font-size:12px; line-height:1.6;
+      margin-top:10px; color: var(--muted); font-size:var(--fs-small); line-height:1.6;
       text-align:center;
+    }
+
+    /* === Admin Button === */
+    .admin-link {
+      margin-top: 28px;
+      text-align: center;
+    }
+    .btn-admin {
+      display: inline-block;
+      position: relative;
+      padding: 12px 28px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--primary-600);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: linear-gradient(180deg, #fff, #f9fafb);
+      text-decoration: none;
+      transition: all .25s ease;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .btn-admin::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(100% 150% at 50% -20%, rgba(59,130,246,.12), transparent 70%);
+      opacity: 0;
+      transform: scale(.9);
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 1;
+    }
+    .btn-admin:hover::before {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .btn-admin:hover {
+      color: var(--primary);
+      border-color: rgba(59,130,246,.25);
+      box-shadow: 0 6px 16px rgba(59,130,246,.15);
+      transform: translateY(-1px);
+    }
+    .btn-admin:active {
+      transform: translateY(1px);
+      box-shadow: none;
     }
 
     /* === エラー表示 === */
     .err{
       margin:8px 0 0;
-      color:#fecaca;
-      background:rgba(239,68,68,.08);
-      border:1px solid rgba(239,68,68,.35);
-      padding:8px 10px;
+      color:#991b1b;
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      padding:10px 12px;
       border-radius:10px;
-      font-size:13px;
+      font-size:14px;
       line-height:1.5;
     }
     .field.has-error input,
     .field.has-error select{
-      border-color:rgba(239,68,68,.8);
-      box-shadow:0 0 0 3px rgba(239,68,68,.25);
-      background:rgba(17,24,39,.75);
+      border-color:#ef4444;
+      box-shadow:0 0 0 4px rgba(239,68,68,.15);
+      background:#fff;
     }
 
     @media print {
       @page { size: A4 portrait; margin: 12mm; }
       .no-print { display: none !important; }
-      thead { display: table-header-group; }
-      tfoot { display: table-footer-group; }
-      table { page-break-inside: auto; }
-      tr, td, th { page-break-inside: avoid; page-break-after: auto; }
-      h2 { break-after: avoid-page; margin-top: 12px; }
-      a { color: #111; text-decoration: none; }
-      tbody tr:nth-child(odd){ background: #f2f3f5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-    @media screen {
-      .print-actions { margin: 8px 0 16px; }
     }
   </style>
 </head>
@@ -174,6 +286,15 @@
     <div class="card">
       <h2>Quick Order</h2>
       <div class="sub">The trade direction (BUY / SELL) is automatically determined from the SL and TP values.</div>
+
+      <div class="mindset">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <strong>Edge × Frequency = Results.</strong><br>
+          A single win or loss is just noise. The goal is to capture the expected value over <u>hundreds of trades</u>.<br>
+          Stick to your rules — focusing on the process is the fastest path to consistent performance.
+        </div>
+      </div>
 
       <form method="post" onsubmit="this.querySelector('.submit').disabled = true;">
         {% csrf_token %}
@@ -218,12 +339,19 @@
           {% endif %}
         </div>
 
-        <button type="submit" class="submit">Submit Phantom Job</button>
+        <button type="submit" class="submit"><span>Submit Phantom Job</span></button>
 
         <p class="note">
           Lot size is automatically calculated on the EA side based on account balance * Risk%.
         </p>
       </form>
+
+      <!-- 管理画面ボタン -->
+      <div class="admin-link">
+        <a href="https://api.mshin0509.com/forex/admin" class="btn-admin" target="_blank" rel="noopener">
+          <span>Go to Admin Dashboard</span>
+        </a>
+      </div>
     </div>
   </div>
 
