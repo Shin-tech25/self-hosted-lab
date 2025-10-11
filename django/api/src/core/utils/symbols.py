@@ -2,12 +2,22 @@
 
 # === 通貨ペア定数 ===
 SYMBOL_CHOICES = [
+    ("USDJPY.oj1m", "USDJPY.oj1m"),
+    ("EURUSD.oj1m", "EURUSD.oj1m"),
+    ("EURJPY.oj1m", "EURJPY.oj1m"),
+    ("GBPJPY.oj1m", "GBPJPY.oj1m"),
+    ("GBPUSD.oj1m", "GBPUSD.oj1m"),
+    ("AUDJPY.oj1m", "AUDJPY.oj1m"),
+    ("NZDJPY.oj1m", "NZDJPY.oj1m"),
+    ("EURGBP.oj1m", "EURGBP.oj1m"),
+    ("USDCHF.oj1m", "USDCHF.oj1m"),
     ("USDJPY", "USDJPY"),
     ("EURUSD", "EURUSD"),
     ("EURJPY", "EURJPY"),
     ("GBPJPY", "GBPJPY"),
     ("GBPUSD", "GBPUSD"),
     ("AUDJPY", "AUDJPY"),
+    ("NZDJPY", "NZDJPY"),
     ("EURGBP", "EURGBP"),
     ("USDCHF", "USDCHF"),
     ("USDJPY#", "USDJPY#"),
@@ -16,6 +26,7 @@ SYMBOL_CHOICES = [
     ("GBPJPY#", "GBPJPY#"),
     ("GBPUSD#", "GBPUSD#"),
     ("AUDJPY#", "AUDJPY#"),
+    ("NZDJPY#", "NZDJPY#"),
     ("EURGBP#", "EURGBP#"),
     ("USDCHF#", "USDCHF#"),
 ]
