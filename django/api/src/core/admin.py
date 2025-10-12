@@ -122,7 +122,7 @@ class PhantomJobAdmin(admin.ModelAdmin):
     search_help_text = "Search by Magic Number"
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
-    readonly_fields = ("id", "created_at", "updated_at",)
+    readonly_fields = ("id", "status", "created_at", "updated_at",)
 
     def queue_time_display(self, obj):
         m = obj.queue_minutes or 0
