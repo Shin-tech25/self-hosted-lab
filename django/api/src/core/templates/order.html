@@ -308,6 +308,28 @@
     }
     .btn-admin:active{ transform: translateY(1px); box-shadow: none; }
 
+    .checklist{
+      margin: 18px 0 6px; padding: 14px 16px;
+      background: linear-gradient(180deg,#f9fafb,#ffffff);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .checklist h3{
+      margin: 0 0 10px; font-size: 15px; font-weight: 700; color:#111827;
+    }
+    .checkrow{
+      display:flex; gap:10px; align-items:flex-start;
+      padding:8px 0; border-top:1px dashed #e5e7eb;
+    }
+    .checkrow:first-of-type{ border-top: none; }
+    .checkrow input[type="checkbox"]{
+      margin-top:2px; transform: translateY(1px);
+    }
+    .checkrow label{
+      margin:0; font-size:14px; font-weight:600; color:#374151;
+    }
+    .check-help{ margin:4px 0 0 26px; font-size:12px; color:#6b7280; }
+
     /* ---------------- Errors ---------------- */
     .err{
       margin:8px 0 0;
@@ -431,6 +453,36 @@
           {% endif %}
         </div>
 
+        <div class="checklist">
+          <h3>Pre-flight Checklist</h3>
+
+          <div class="field checkrow {% if form.confirm_po.errors %}has-error{% endif %}">
+            {{ form.confirm_po }}
+            <label for="{{ form.confirm_po.id_for_label }}">Confirmed perfect order of 20 / 80 / 320 EMA on 1H timeframe.</label>
+          </div>
+          {% if form.confirm_po.errors %}
+            <div class="err">
+              {% for e in form.confirm_po.errors %}<div>{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          <div class="check-help">
+            BUY: 20EMA &gt; 80EMA &gt; 320EMA<br /> SELL: 20EMA &lt; 80EMA &lt; 320EMA
+          </div>
+
+          <div class="field checkrow {% if form.confirm_scn.errors %}has-error{% endif %}">
+            {{ form.confirm_scn }}
+            <label for="{{ form.confirm_scn.id_for_label }}">Confirmed in the trade notes: scenario design including price zone analysis and trend analysis.</label>
+          </div>
+          {% if form.confirm_scn.errors %}
+            <div class="err">
+              {% for e in form.confirm_scn.errors %}<div>{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          <div class="check-help">
+            Use Fibonacci retracement, chart pattern and moving average to identify key price zones. Record your scenario in the trade notes.
+          </div>
+        </div>
+
         <button type="submit" class="submit"><span>Submit Phantom Job</span></button>
 
         <p class="note">
@@ -452,6 +504,20 @@
       const firstErr = document.querySelector('.field.has-error input, .field.has-error select')
                       || document.querySelector('.err');
       if (firstErr && typeof firstErr.focus === 'function') firstErr.focus();
+
+      // チェックリストが両方ONになるまでサブミット不可
+      const submitBtn = document.querySelector('.submit');
+      const po = document.querySelector('input[name="confirm_po"]');
+      const scn = document.querySelector('input[name="confirm_scn"]');
+
+      function syncSubmitState(){
+        if (submitBtn) {
+          submitBtn.disabled = !(po && scn && po.checked && scn.checked);
+        }
+      }
+      if (po) po.addEventListener('change', syncSubmitState);
+      if (scn) scn.addEventListener('change', syncSubmitState);
+      syncSubmitState();
     })();
   </script>
 </body>

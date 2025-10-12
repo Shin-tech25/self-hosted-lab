@@ -322,6 +322,16 @@ class QuickOrderForm(forms.Form):
     tp      = forms.FloatField(label="TP Price")
     #risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
 
+    # サブミット前チェックのフラグ（必須）
+    confirm_po  = forms.BooleanField(
+        label="Confirmed perfect order of 20 / 80 / 320 EMA on 1H timeframe.",
+        required=True
+    )
+    confirm_scn = forms.BooleanField(
+        label="Confirmed in the trade notes: scenario design including price zone analysis and trend analysis.",
+        required=True
+    )
+
     def clean(self):
         cleaned = super().clean()
         sl = cleaned.get("sl")
@@ -359,6 +369,12 @@ class QuickOrderForm(forms.Form):
             # ⑥ 同一アカウントで RUNNING があれば Submit 禁止
             if PhantomJob.objects.filter(account=account, status=PhantomJob.Status.RUNNING).exists():
                 self.add_error(None, f"{account} already has a RUNNING job. Please wait until it finishes.")
+
+        # === ⑥ 必須チェック（パーフェクトオーダー／シナリオ記録）===
+        if not cleaned.get("confirm_po"):
+            self.add_error("confirm_po", "Make sure to confirm the perfect order of 20 / 80 / 320 EMA on the 1H timeframe.")
+        if not cleaned.get("confirm_scn"):
+            self.add_error("confirm_scn", "Make sure to confirm in the trade notes: scenario design including price zone analysis and trend analysis.")
 
         return cleaned
 
