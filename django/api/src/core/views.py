@@ -331,6 +331,14 @@ class QuickOrderForm(forms.Form):
         label="Confirmed in the trade notes: scenario design including price zone analysis and trend analysis.",
         required=True
     )
+    confirm_sltp  = forms.BooleanField(
+        label="Confirmed that stop loss is placed at the price level where the setup is invalidated, and take profit is set at a reasonable, not overly ambitious level.",
+        required=True
+    )
+    confirm_risk = forms.BooleanField(
+        label="Confirmed: I accept the risk — anything can happen — and I will simply wait for the outcome after submission.",
+        required=True
+    )
 
     def clean(self):
         cleaned = super().clean()
@@ -375,6 +383,10 @@ class QuickOrderForm(forms.Form):
             self.add_error("confirm_po", "Make sure to confirm the perfect order of 20 / 80 / 320 EMA on the 1H timeframe.")
         if not cleaned.get("confirm_scn"):
             self.add_error("confirm_scn", "Make sure to confirm in the trade notes: scenario design including price zone analysis and trend analysis.")
+        if not cleaned.get("confirm_sltp"):
+            self.add_error("confirm_sltp", "Make sure to place stop loss price where the setup is invalidated, and take profit price at a reasonable, not overly ambitious level.")
+        if not cleaned.get("confirm_risk"):
+            self.add_error("confirm_risk", "Make sure to accept the risk and wait for the outcome after submission.")
 
         return cleaned
 

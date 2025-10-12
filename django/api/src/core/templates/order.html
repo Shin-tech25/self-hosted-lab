@@ -481,6 +481,18 @@
           <div class="check-help">
             Use Fibonacci retracement, chart pattern and moving average to identify key price zones. Record your scenario in the trade notes.
           </div>
+          <div class="field checkrow {% if form.confirm_sltp.errors %}has-error{% endif %}">
+            {{ form.confirm_sltp }}
+            <label for="{{ form.confirm_sltp.id_for_label }}">Confirmed that stop loss is placed at the price level where the setup is invalidated, and take profit is set at a reasonable, not overly ambitious level.</label>
+          </div>
+          {% if form.confirm_sltp.errors %}<div class="err">{% for e in form.confirm_sltp.errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+          <div class="check-help">Place SL where the setup is invalidated, and TP at a certain appropriate level.”</div>
+          <div class="field checkrow {% if form.confirm_risk.errors %}has-error{% endif %}">
+            {{ form.confirm_risk }}
+            <label for="{{ form.confirm_risk.id_for_label }}">Confirmed to accept the risk — anything can happen — and simply wait for the outcome after submission.</label>
+          </div>
+          {% if form.confirm_risk.errors %}<div class="err">{% for e in form.confirm_risk.errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+          <div class="check-help">No post-submission tinkering: let the plan play out.</div>
         </div>
 
         <button type="submit" class="submit"><span>Submit Phantom Job</span></button>
@@ -505,18 +517,14 @@
                       || document.querySelector('.err');
       if (firstErr && typeof firstErr.focus === 'function') firstErr.focus();
 
-      // チェックリストが両方ONになるまでサブミット不可
+      // ★ 変更：チェックリスト内の全チェックがONになるまで送信不可
       const submitBtn = document.querySelector('.submit');
-      const po = document.querySelector('input[name="confirm_po"]');
-      const scn = document.querySelector('input[name="confirm_scn"]');
+      const checks = Array.from(document.querySelectorAll('.checklist input[type="checkbox"]'));
 
       function syncSubmitState(){
-        if (submitBtn) {
-          submitBtn.disabled = !(po && scn && po.checked && scn.checked);
-        }
+        if (submitBtn) submitBtn.disabled = !checks.every(c => c.checked);
       }
-      if (po) po.addEventListener('change', syncSubmitState);
-      if (scn) scn.addEventListener('change', syncSubmitState);
+      checks.forEach(c => c.addEventListener('change', syncSubmitState));
       syncSubmitState();
     })();
   </script>
