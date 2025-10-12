@@ -3,6 +3,7 @@ from collections import Counter
 import logging
 from datetime import timezone as dt_tz
 from django import forms
+from django.core.exceptions import ValidationError
 from django.views.generic import FormView
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -352,9 +353,12 @@ class QuickOrderForm(forms.Form):
         # === ⑤ 1日1発 制約（JST基準のqueue_dateと揃える）===
         account = cleaned.get("account")
         if account:
-            today = timezone.localdate()
-            if PhantomJob.objects.filter(account=account, queue_date=today).exists():
-                self.add_error(None, f"A job has already been queued today ({today}) for {account}.")
+            if PhantomJob.objects.filter(account=account, queue_date=today_local).exists():
+                self.add_error(None, f"A job has already been queued today ({today_local}) for {account}.")
+
+            # ⑥ 同一アカウントで RUNNING があれば Submit 禁止
+            if PhantomJob.objects.filter(account=account, status=PhantomJob.Status.RUNNING).exists():
+                self.add_error(None, f"{account} already has a RUNNING job. Please wait until it finishes.")
 
         return cleaned
 
@@ -383,16 +387,30 @@ class QuickOrderView(FormView):
 
         side = "BUY" if sl < tp else "SELL"
 
-        job = PhantomJob.objects.create(
-            account=account,
-            symbol=symbol,
-            side=side,
-            sl_price=sl,
-            tp_price=tp,
-            use_risk_lot=True,
-            risk_percent=RISK_PERCENT_DEFAULT,
-            status=PhantomJob.Status.PENDING,
-        )
+        try:
+            with transaction.atomic():
+                job = PhantomJob(
+                    account=account,
+                    symbol=symbol,
+                    side=side,
+                    sl_price=sl,
+                    tp_price=tp,
+                    use_risk_lot=True,
+                    risk_percent=RISK_PERCENT_DEFAULT,
+                    status=PhantomJob.Status.PENDING,
+                )
+                job.save()  # ここで model.clean() が走る → 競合時 ValidationError
+        except ValidationError as e:
+            # フォームに載せ替えて画面に返す
+            for field, msgs in e.message_dict.items():
+                if field in form.fields:
+                    for msg in msgs:
+                        form.add_error(field, msg)
+                else:
+                    for msg in msgs:
+                        form.add_error(None, msg)
+            return self.form_invalid(form)
+
         messages.success(
             self.request,
             f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT})."

@@ -219,7 +219,7 @@ class PhantomJob(models.Model):
         if self.queue_date and self.queue_date.weekday() >= 5:
             raise ValidationError({"queue_date": "Jobs cannot be submitted on weekends."})
 
-        # 既存レコードなら「以前の状態」を取得
+        # 既存レコードなら以前の状態を取得
         if self.pk:
             prev = PhantomJob.objects.only("status").get(pk=self.pk).status
         else:
@@ -238,6 +238,17 @@ class PhantomJob(models.Model):
         # 追加整合性（保険）
         if new == PhantomJob.Status.PENDING and (self.started_at or self.finished_at):
             raise ValidationError({"status": "When the status is PENDING, both started_at and finished_at must be NULL."})
+
+        # === 同一アカウントで RUNNING 中は、新規 PENDING / RUNNING を禁止 ===
+        if self.account_id and new in {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING}:
+            exists_running = (
+                PhantomJob.objects
+                .filter(account_id=self.account_id, status=PhantomJob.Status.RUNNING)
+                .exclude(pk=self.pk)
+                .exists()
+            )
+            if exists_running:
+                raise ValidationError({"account": "This account already has a RUNNING job. Please wait until it finishes."})
 
     def save(self, *args, **kwargs):
         """
