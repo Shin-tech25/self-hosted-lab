@@ -364,13 +364,22 @@ class QuickOrderView(FormView):
     template_name = "order.html"
     form_class = QuickOrderForm
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if PhantomJob.objects.exists():        
+            latest_job = PhantomJob.objects.order_by("-created_at").first()
+        else:
+            latest_job = None
+
+        context["latest_job"] = latest_job
+        return context
+
     def form_valid(self, form):
         account = form.cleaned_data["account"]
         symbol  = form.cleaned_data["symbol"]
         sl      = form.cleaned_data["sl"]
         tp      = form.cleaned_data["tp"]
         RISK_PERCENT_DEFAULT = 3.5  # Risk% Fixed
-        #risk_percent   = form.cleaned_data["risk_percent"]
 
         side = "BUY" if sl < tp else "SELL"
 
@@ -384,5 +393,8 @@ class QuickOrderView(FormView):
             risk_percent=RISK_PERCENT_DEFAULT,
             status=PhantomJob.Status.PENDING,
         )
-        messages.success(self.request, f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT}).")
+        messages.success(
+            self.request,
+            f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT})."
+        )
         return redirect("order")

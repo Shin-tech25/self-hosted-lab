@@ -198,6 +198,82 @@
       text-align:center;
     }
 
+    /* === Latest Job Card === */
+    .latest-job {
+      margin: 16px 0 22px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg,#f9fafb,#ffffff);
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(15,23,42,.04);
+      font-size: 14px;
+      color: #374151;
+    }
+    .latest-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: #111827;
+    }
+    .latest-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .latest-table th {
+      text-align: left;
+      padding: 6px 8px;
+      width: 100px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+    .latest-table td {
+      padding: 6px 8px;
+      color: #1f2937;
+    }
+
+    /* === Status indicator for table === */
+    .status-icon {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: middle;
+      box-shadow: 0 0 0 2px rgba(0,0,0,.05) inset;
+    }
+
+    /* === Larger status dot for title === */
+    .status-dot {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: -2px;
+      box-shadow: 0 0 0 3px rgba(0,0,0,.05) inset;
+    }
+
+    /* 状態ごとの共通カラーリング */
+    .status-icon.pending,
+    .status-icon.running,
+    .status-dot.pending,
+    .status-dot.running {
+      background-color: #16a34a; /* green */
+      box-shadow: 0 0 0 2px rgba(22,163,74,.25);
+    }
+
+    .status-icon.completed,
+    .status-dot.completed {
+      background-color: #9ca3af; /* gray */
+      box-shadow: 0 0 0 2px rgba(156,163,175,.25);
+    }
+
+    .status-icon.error,
+    .status-dot.error {
+      background-color: #ef4444; /* red */
+      box-shadow: 0 0 0 2px rgba(239,68,68,.25);
+    }
+
     /* === Admin Button === */
     .admin-link {
       margin-top: 28px;
@@ -295,6 +371,33 @@
           Stick to your rules — focusing on the process is the fastest path to consistent performance.
         </div>
       </div>
+
+      {% if latest_job %}
+        <div class="latest-job">
+          <div class="latest-title">
+            <span class="status-dot {{ latest_job.status|lower }}"></span>
+            Latest Job ID#{{ latest_job.id }}
+          </div>
+          <table class="latest-table">
+            <tr>
+              <th>Account</th><td>{{ latest_job.account }}</td>
+            </tr>
+            <tr>
+              <th>Status</th>
+              <td>{{ latest_job.get_status_display }}</td>
+            </tr>
+            <tr>
+              <th>Symbol</th><td>{{ latest_job.symbol }}</td>
+            </tr>
+            <tr>
+              <th>Started</th><td>{{ latest_job.started_at|date:"Y-m-d H:i:s" }}</td>
+            </tr>
+            <tr>
+              <th>Finished</th><td>{{ latest_job.finished_at|date:"Y-m-d H:i:s" }}</td>
+            </tr>
+          </table>
+        </div>
+      {% endif %}
 
       <form method="post" onsubmit="this.querySelector('.submit').disabled = true;">
         {% csrf_token %}
