@@ -112,7 +112,8 @@ class PhantomJobAdmin(admin.ModelAdmin):
         "use_risk_lot", "risk_percent", "lots_fixed", "max_lot_cap",
         "slippage", "tol_price_pips", "cooldown_sec",
         "magic", "queue_date", "queue_time_display", "started_at", "finished_at",
-        "error_detail", "failed_at", "created_at",
+        "error_detail", "failed_at", "scenario_url", "target_ema", "path_analysis", "r_analysis",
+        "created_at",
     )
     list_filter = (
         ("finished_at", DateTimeRangeFilter),
