@@ -372,7 +372,6 @@
 
     <div class="card">
       <h2>Quick Order</h2>
-      <div class="sub">The trade direction (BUY / SELL) is automatically determined from the SL and TP values.</div>
 
       <div class="mindset">
         <div class="dot" aria-hidden="true"></div>
@@ -479,7 +478,7 @@
             </div>
           {% endif %}
           <div class="check-help">
-            Use Fibonacci retracement, chart pattern and moving average to identify key price zones. Record your scenario in the trade notes.
+            Develop a price grid strategy with an edge and record it in the trading note.
           </div>
           <div class="field checkrow {% if form.confirm_sltp.errors %}has-error{% endif %}">
             {{ form.confirm_sltp }}
@@ -498,7 +497,8 @@
         <button type="submit" class="submit"><span>Submit Phantom Job</span></button>
 
         <p class="note">
-          Lot size is automatically calculated on the EA side based on account balance * Risk%.
+          Lot size is automatically calculated on the EA side based on account balance * Risk%. <br />
+          The trade direction (BUY / SELL) is automatically determined from the SL and TP values.
         </p>
       </form>
 
