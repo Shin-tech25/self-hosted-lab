@@ -118,12 +118,6 @@ class ClosedPosition(models.Model):
         # 最終損益 = 売買差益 + 手数料 + スワップ
         return (self.profit or 0) + (self.commission or 0) + (self.swap or 0)
 
-from django.core.exceptions import ValidationError
-from django.db import models
-from django.db.models import Q
-from django.utils import timezone
-from django.utils.deconstruct import deconstructible
-
 # ---- 共有定数（単一のソース） --------------------------------------
 SLOT_RISK_RETURN_DEFAULT = {
     "Q1k1": {"risk": 1.0, "ret": 1.0},
@@ -219,6 +213,7 @@ class PhantomJob(models.Model):
     class TargetEMA(models.TextChoices):
         EMA20 = "EMA20", "1H 20EMA"
         EMA80 = "EMA80", "1H 80EMA"
+        EMA210 = "EMA210", "1H 320EMA"
     
     # 計算ヘルパ（自動実行しない）
     @classmethod
