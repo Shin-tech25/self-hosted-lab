@@ -11,12 +11,16 @@ from core.views import (
     HealthzView,
     AccountDailyStatViewSet,
     ClosedPositionViewSet,
+    OpenOrderViewSet,
+    OpenPositionViewSet,
     PhantomJobViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"account-daily-stats", AccountDailyStatViewSet, basename="account-daily-stats")
 router.register(r"closed-positions",   ClosedPositionViewSet,    basename="closed-positions")
+router.register(r"open-orders",   OpenOrderViewSet,    basename="open-orders")
+router.register(r"open-positions",   OpenPositionViewSet,    basename="open-positions")
 router.register(r"phantom-jobs", PhantomJobViewSet, basename="phantom-jobs")
 
 urlpatterns = [

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Account, AccountDailyStat, ClosedPosition, PhantomJob
+from .models import Account, AccountDailyStat, ClosedPosition, OpenOrder, OpenPosition, PhantomJob
 
 # ========== 共通: account_id -> Account 解決 ==========
 def _resolve_active_account(account_id: str) -> Account:
@@ -91,6 +91,39 @@ class ClosedPositionSerializer(serializers.ModelSerializer):
         validated.pop("ticket", None)
         return super().update(instance, validated)
 
+# ========== OpenOrder ==========
+class OpenOrderSerializer(serializers.ModelSerializer):
+    account_id = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = OpenOrder
+        fields = [
+            "account_id", "ticket", "symbol", "side", "otype", "volume",
+            "price", "sl", "tp", "magic", "comment", "placed_at", "expires_at",
+            "snapshot_ts",
+        ]
+
+    def create(self, validated):
+        acc_id = validated.pop("account_id")
+        account = _resolve_active_account(acc_id)
+        return OpenOrder.objects.create(account=account, **validated)
+
+# ========== OpenPosition ==========
+class OpenPositionSerializer(serializers.ModelSerializer):
+    account_id = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = OpenPosition
+        fields = [
+            "account_id", "ticket", "symbol", "side", "volume",
+            "open_price", "sl", "tp", "magic", "comment", "open_time",
+            "snapshot_ts",
+        ]
+
+    def create(self, validated):
+        acc_id = validated.pop("account_id")
+        account = _resolve_active_account(acc_id)
+        return OpenPosition.objects.create(account=account, **validated)
 
 # ========== PhantomJob ==========
 class PhantomJobSerializer(serializers.ModelSerializer):

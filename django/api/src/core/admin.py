@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.timezone import now
 from rangefilter.filters import DateRangeFilter, DateTimeRangeFilter
-from .models import Account, AccountDailyStat, ClosedPosition, PhantomJob
+from .models import Account, AccountDailyStat, ClosedPosition, OpenOrder, OpenPosition, PhantomJob
 
 from .utils.perf import summarize
 
@@ -104,6 +104,77 @@ class ClosedPositionAdmin(admin.ModelAdmin):
     #     resp["Content-Disposition"] = 'attachment; filename="perf_report.pdf"'
     #     return resp
     # export_perf_pdf.short_description = "選択した決済のパフォーマンスレポート（PDFダウンロード）"
+
+@admin.register(OpenOrder)
+class OpenOrderAdmin(admin.ModelAdmin):
+    list_display  = (
+        "account", "symbol", "side", "otype",
+        "ticket", "volume", "sl", "tp",
+        "magic", "comment", "placed_at", "expires_at", "snapshot_ts",
+    )
+    list_filter   = (
+        "account", "symbol", "side", "otype",
+        ("snapshot_ts", DateTimeRangeFilter),
+    )
+    search_fields = ("account__account_id", "symbol", "comment", "ticket", "magic")
+    ordering      = ("-snapshot_ts", "-ticket")
+    date_hierarchy = "snapshot_ts"
+    list_per_page = 50
+    readonly_fields = (
+        "account", "ticket", "symbol", "side", "otype", "volume",
+        "price", "sl", "tp", "magic", "comment",
+        "placed_at", "expires_at", "snapshot_ts",
+    )
+
+    fieldsets = (
+        (None, {
+            "fields": (
+                ("account", "snapshot_ts"),
+                ("symbol", "side", "otype"),
+                ("ticket", "volume", "magic"),
+                ("sl", "tp"),
+                "comment",
+                ("placed_at", "expires_at"),
+                "price",
+            )
+        }),
+    )
+
+
+@admin.register(OpenPosition)
+class OpenPositionAdmin(admin.ModelAdmin):
+    list_display  = (
+        "account", "symbol", "side",
+        "ticket", "volume", "sl", "tp",
+        "magic", "comment", "open_time", "snapshot_ts",
+    )
+    list_filter   = (
+        "account", "symbol", "side",
+        ("snapshot_ts", DateTimeRangeFilter),
+    )
+    search_fields = ("account__account_id", "symbol", "comment", "ticket", "magic")
+    ordering      = ("-snapshot_ts", "-ticket")
+    date_hierarchy = "snapshot_ts"
+    list_per_page = 50
+    readonly_fields = (
+        "account", "ticket", "symbol", "side", "volume",
+        "open_price", "sl", "tp", "magic", "comment",
+        "open_time", "snapshot_ts",
+    )
+
+    fieldsets = (
+        (None, {
+            "fields": (
+                ("account", "snapshot_ts"),
+                ("symbol", "side"),
+                ("ticket", "volume", "magic"),
+                ("sl", "tp"),
+                "comment",
+                "open_time",
+                "open_price",
+            )
+        }),
+    )
 
 @admin.register(PhantomJob)
 class PhantomJobAdmin(admin.ModelAdmin):

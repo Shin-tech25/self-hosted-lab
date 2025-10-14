@@ -118,6 +118,61 @@ class ClosedPosition(models.Model):
         # 最終損益 = 売買差益 + 手数料 + スワップ
         return (self.profit or 0) + (self.commission or 0) + (self.swap or 0)
 
+class OpenOrder(models.Model):
+    class OType(models.TextChoices):
+        BUYLIMIT   = "BUYLIMIT"
+        BUYSTOP    = "BUYSTOP"
+        SELLLIMIT  = "SELLLIMIT"
+        SELLSTOP   = "SELLSTOP"
+
+    id = models.BigAutoField(primary_key=True)
+    account = models.ForeignKey("Account", on_delete=models.PROTECT,
+                                related_name="open_orders", db_index=True)
+    ticket = models.BigIntegerField(db_index=True)  # MT4 ticket
+    symbol = models.CharField(max_length=32, db_index=True)
+    side   = models.CharField(max_length=4, choices=[("BUY","Buy"),("SELL","Sell")])
+    otype  = models.CharField(max_length=12, choices=OType.choices)
+    volume = models.FloatField()
+    price  = models.FloatField(null=True, blank=True)   # UI非表示
+    sl     = models.FloatField(null=True, blank=True)
+    tp     = models.FloatField(null=True, blank=True)
+    magic  = models.BigIntegerField(null=True, blank=True, db_index=True)
+    comment = models.CharField(max_length=64, null=True, blank=True)
+    placed_at  = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    # このスナップショットが取られた時刻（全件同一値）
+    snapshot_ts = models.DateTimeField(db_index=True)
+
+    class Meta:
+        db_table  = "open_orders"
+        ordering  = ["-snapshot_ts", "-ticket"]
+        unique_together = ("account", "ticket")
+
+
+class OpenPosition(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    account = models.ForeignKey("Account", on_delete=models.PROTECT,
+                                related_name="open_positions", db_index=True)
+    ticket = models.BigIntegerField(db_index=True)  # MT4 ticket
+    symbol = models.CharField(max_length=32, db_index=True)
+    side   = models.CharField(max_length=4, choices=[("BUY","Buy"),("SELL","Sell")])
+    volume = models.FloatField()
+    open_price = models.FloatField(null=True, blank=True)  # UI非表示
+    sl     = models.FloatField(null=True, blank=True)
+    tp     = models.FloatField(null=True, blank=True)
+    magic  = models.BigIntegerField(null=True, blank=True, db_index=True)
+    comment   = models.CharField(max_length=64, null=True, blank=True)
+    open_time = models.DateTimeField(null=True, blank=True)
+
+    snapshot_ts = models.DateTimeField(db_index=True)
+
+    class Meta:
+        db_table  = "open_positions"
+        ordering  = ["-snapshot_ts", "-ticket"]
+        unique_together = ("account", "ticket")
+
+
 # ---- 共有定数（単一のソース） --------------------------------------
 SLOT_RISK_RETURN_DEFAULT = {
     "Q1k1": {"risk": 1.0, "ret": 1.0},

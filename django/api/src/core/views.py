@@ -26,12 +26,16 @@ from .models import (
     Account,
     AccountDailyStat,
     ClosedPosition,
+    OpenOrder,
+    OpenPosition,
     PhantomJob,
 )
 from .serializers import (
     PhantomJobSerializer,
     AccountDailyStatSerializer,
     ClosedPositionSerializer,
+    OpenOrderSerializer,
+    OpenPositionSerializer
 )
 from .utils.symbols import SYMBOL_CHOICES
 
@@ -241,6 +245,259 @@ class ClosedPositionViewSet(mixins.ListModelMixin,
             status=status_code,
         )
 
+class OpenOrderViewSet(mixins.ListModelMixin,
+                       mixins.CreateModelMixin,
+                       viewsets.GenericViewSet):
+    """
+    GET  /api/open-orders/?account_id=MT5-xxxx&symbol=USDJPY
+    POST /api/open-orders/          ... 単体作成（Serializer準拠）
+    POST /api/open-orders/bulk/     ... 複数 upsert（list）
+    POST /api/open-orders/replace/  ... 口座単位 replace（全削除→bulk_create）
+    """
+    queryset = OpenOrder.objects.select_related("account").all()
+    serializer_class = OpenOrderSerializer
+    permission_classes = [IsAuthenticated | HasAPIKey]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ["account__account_id", "symbol", "side", "magic", "ticket", "otype"]
+    ordering_fields = ["snapshot_ts", "ticket", "volume", "placed_at"]
+    search_fields = ["account__account_id", "symbol", "comment"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        p = self.request.query_params
+        if acc := p.get("account_id"):
+            qs = qs.filter(account__account_id=acc)
+        if sym := p.get("symbol"):
+            qs = qs.filter(symbol=sym)
+        return qs.order_by("-snapshot_ts", "-ticket", "-id")
+
+    @action(detail=False, methods=["post"], url_path="bulk")
+    def bulk(self, request):
+        """
+        list payload（各要素は OpenOrderSerializer に準拠）。
+        口座×ticket で update_or_create（＝upsert）。
+        """
+        rid = getattr(request, "_request_id", "-")
+        data = request.data
+        if not isinstance(data, list):
+            return Response({"detail": "list required", "request_id": rid}, status=400)
+
+        created = updated = failed = 0
+        errors = []
+        err_counter = Counter()
+
+        logger.info("rid=%s open-orders.bulk.start count=%d", rid, len(data))
+
+        with transaction.atomic():
+            for idx, raw in enumerate(data):
+                try:
+                    s = self.get_serializer(data=raw)
+                    if not s.is_valid():
+                        failed += 1
+                        keys = tuple(sorted(s.errors.keys())) or ("__nonfield__",)
+                        err_counter[keys] += 1
+                        errors.append({"index": idx, "error": s.errors})
+                        continue
+
+                    vd = dict(s.validated_data)
+                    acc_id = vd.pop("account_id", None)
+                    ticket = vd.pop("ticket", None)
+                    if not acc_id or ticket is None:
+                        failed += 1
+                        key = ("account_id", "ticket")
+                        err_counter[key] += 1
+                        errors.append({"index": idx, "error": {"account_id/ticket": ["required"]}})
+                        continue
+
+                    account = _resolve_active_account(acc_id)
+                    obj, was_created = OpenOrder.objects.update_or_create(
+                        account=account, ticket=ticket, defaults=vd
+                    )
+                    created += 1 if was_created else 1
+                    updated += 0 if was_created else 1
+
+                except Exception as e:
+                    failed += 1
+                    err_counter[("__exception__",)] += 1
+                    errors.append({"index": idx, "error": {"__all__": [str(e)]}})
+                    logger.exception("rid=%s open-orders.bulk.unexpected idx=%d", rid, idx)
+
+        ok = failed == 0
+        status_code = status.HTTP_201_CREATED if ok else status.HTTP_207_MULTI_STATUS
+        error_summary = {"|".join(k) if isinstance(k, tuple) else str(k): v
+                         for k, v in err_counter.items()}
+        logger.info("rid=%s open-orders.bulk.done created=%d updated=%d failed=%d ok=%s",
+                    rid, created, updated, failed, ok)
+        return Response(
+            {"ok": ok, "created": created, "updated": updated, "failed": failed,
+             "errors": errors[:10], "error_summary": error_summary, "request_id": rid},
+            status=status_code,
+        )
+
+    @action(detail=False, methods=["post"], url_path="replace")
+    def replace(self, request):
+        """
+        口座単位で現在の open-orders を「全削除→一括作成」。
+        payload 例:
+        {
+          "account_id": "MT5-xxxx",
+          "snapshot_ts": "2025-10-14T01:23:45Z",
+          "items": [ ... OpenOrderSerializer のlist ... ]
+        }
+        """
+        rid = getattr(request, "_request_id", "-")
+        payload = request.data
+        if not isinstance(payload, dict):
+            return Response({"detail": "object required", "request_id": rid}, status=400)
+
+        acc_id = payload.get("account_id")
+        snapshot_ts = payload.get("snapshot_ts")
+        items = payload.get("items", [])
+
+        if not acc_id or not snapshot_ts or not isinstance(items, list):
+            return Response({"detail": "account_id, snapshot_ts, items are required",
+                             "request_id": rid}, status=400)
+
+        try:
+            account = _resolve_active_account(acc_id)
+        except Exception as e:
+            return Response({"detail": str(e), "request_id": rid}, status=400)
+
+        objs = []
+        for idx, raw in enumerate(items):
+            s = self.get_serializer(data={**raw, "account_id": acc_id, "snapshot_ts": snapshot_ts})
+            if not s.is_valid():
+                return Response({"detail": "invalid item", "index": idx, "errors": s.errors,
+                                 "request_id": rid}, status=400)
+            vd = dict(s.validated_data)
+            vd.pop("account_id", None)
+            objs.append(OpenOrder(account=account, **vd))
+
+        with transaction.atomic():
+            OpenOrder.objects.filter(account=account).delete()
+            OpenOrder.objects.bulk_create(objs)
+
+        return Response({"ok": True, "count": len(objs), "request_id": rid}, status=201)
+
+class OpenPositionViewSet(mixins.ListModelMixin,
+                          mixins.CreateModelMixin,
+                          viewsets.GenericViewSet):
+    """
+    GET  /api/open-positions/?account_id=MT5-xxxx&symbol=USDJPY
+    POST /api/open-positions/          ... 単体作成
+    POST /api/open-positions/bulk/     ... 複数 upsert（list）
+    POST /api/open-positions/replace/  ... 口座単位 replace（全削除→bulk_create）
+    """
+    queryset = OpenPosition.objects.select_related("account").all()
+    serializer_class = OpenPositionSerializer
+    permission_classes = [IsAuthenticated | HasAPIKey]
+    filter_backends = [DjangoFilterBackend, OrderingFilter, SearchFilter]
+    filterset_fields = ["account__account_id", "symbol", "side", "magic", "ticket"]
+    ordering_fields = ["snapshot_ts", "ticket", "volume", "open_time"]
+    search_fields = ["account__account_id", "symbol", "comment"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        p = self.request.query_params
+        if acc := p.get("account_id"):
+            qs = qs.filter(account__account_id=acc)
+        if sym := p.get("symbol"):
+            qs = qs.filter(symbol=sym)
+        return qs.order_by("-snapshot_ts", "-ticket", "-id")
+
+    @action(detail=False, methods=["post"], url_path="bulk")
+    def bulk(self, request):
+        rid = getattr(request, "_request_id", "-")
+        data = request.data
+        if not isinstance(data, list):
+            return Response({"detail": "list required", "request_id": rid}, status=400)
+
+        created = updated = failed = 0
+        errors = []
+        err_counter = Counter()
+
+        logger.info("rid=%s open-positions.bulk.start count=%d", rid, len(data))
+
+        with transaction.atomic():
+            for idx, raw in enumerate(data):
+                try:
+                    s = self.get_serializer(data=raw)
+                    if not s.is_valid():
+                        failed += 1
+                        keys = tuple(sorted(s.errors.keys())) or ("__nonfield__",)
+                        err_counter[keys] += 1
+                        errors.append({"index": idx, "error": s.errors})
+                        continue
+
+                    vd = dict(s.validated_data)
+                    acc_id = vd.pop("account_id", None)
+                    ticket = vd.pop("ticket", None)
+                    if not acc_id or ticket is None:
+                        failed += 1
+                        err_counter[("account_id/ticket",)] += 1
+                        errors.append({"index": idx, "error": {"account_id/ticket": ["required"]}})
+                        continue
+
+                    account = _resolve_active_account(acc_id)
+                    obj, was_created = OpenPosition.objects.update_or_create(
+                        account=account, ticket=ticket, defaults=vd
+                    )
+                    created += 1 if was_created else 1
+                    updated += 0 if was_created else 1
+
+                except Exception as e:
+                    failed += 1
+                    err_counter[("__exception__",)] += 1
+                    errors.append({"index": idx, "error": {"__all__": [str(e)]}})
+                    logger.exception("rid=%s open-positions.bulk.unexpected idx=%d", rid, idx)
+
+        ok = failed == 0
+        status_code = status.HTTP_201_CREATED if ok else status.HTTP_207_MULTI_STATUS
+        error_summary = {"|".join(k) if isinstance(k, tuple) else str(k): v
+                         for k, v in err_counter.items()}
+        logger.info("rid=%s open-positions.bulk.done created=%d updated=%d failed=%d ok=%s",
+                    rid, created, updated, failed, ok)
+        return Response(
+            {"ok": ok, "created": created, "updated": updated, "failed": failed,
+             "errors": errors[:10], "error_summary": error_summary, "request_id": rid},
+            status=status_code,
+        )
+
+    @action(detail=False, methods=["post"], url_path="replace")
+    def replace(self, request):
+        rid = getattr(request, "_request_id", "-")
+        payload = request.data
+        if not isinstance(payload, dict):
+            return Response({"detail": "object required", "request_id": rid}, status=400)
+
+        acc_id = payload.get("account_id")
+        snapshot_ts = payload.get("snapshot_ts")
+        items = payload.get("items", [])
+
+        if not acc_id or not snapshot_ts or not isinstance(items, list):
+            return Response({"detail": "account_id, snapshot_ts, items are required",
+                             "request_id": rid}, status=400)
+
+        try:
+            account = _resolve_active_account(acc_id)
+        except Exception as e:
+            return Response({"detail": str(e), "request_id": rid}, status=400)
+
+        objs = []
+        for idx, raw in enumerate(items):
+            s = self.get_serializer(data={**raw, "account_id": acc_id, "snapshot_ts": snapshot_ts})
+            if not s.is_valid():
+                return Response({"detail": "invalid item", "index": idx, "errors": s.errors,
+                                 "request_id": rid}, status=400)
+            vd = dict(s.validated_data)
+            vd.pop("account_id", None)
+            objs.append(OpenPosition(account=account, **vd))
+
+        with transaction.atomic():
+            OpenPosition.objects.filter(account=account).delete()
+            OpenPosition.objects.bulk_create(objs)
+
+        return Response({"ok": True, "count": len(objs), "request_id": rid}, status=201)
 
 # --- Phantom Job 最小実装 ---
 class PhantomJobViewSet(viewsets.ModelViewSet):
