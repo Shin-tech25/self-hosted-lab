@@ -628,14 +628,14 @@ int OnInit(){
 
 int start(){
    if(!IsActive){
-      if(TimeCurrent()-_lastClaimTry>=300){  // 非アクティブ時は5分毎にClaimを試みる
+      if(TimeCurrent()-_lastClaimTry>=60){  // 非アクティブ時 毎分Claimを試みる
          _lastClaimTry=TimeCurrent();
          ClaimLatestPending();
       }
       return 0;
    }
 
-   if(TimeCurrent()-_lastStatusPoll>=10){ // アクティブ時は10秒毎にステータス確認
+   if(TimeCurrent()-_lastStatusPoll>=60){ // アクティブ時 毎分ステータス確認
       _lastStatusPoll=TimeCurrent();
       if(FetchJobStatus() && JobStatus=="COMPLETED"){
          Print("Server requested completion -> closing all.");
