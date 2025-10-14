@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.dateparse import parse_date, parse_datetime
 from django.shortcuts import redirect, get_object_or_404
+from django.urls import reverse
 from rest_framework import serializers, viewsets, mixins, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -577,7 +578,7 @@ class QuickOrderForm(forms.Form):
     symbol  = forms.ChoiceField(label="Symbol", choices=SYMBOL_CHOICES)
     sl      = forms.FloatField(label="SL Price")
     tp      = forms.FloatField(label="TP Price")
-    #risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
+    # risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
 
     # サブミット前チェックのフラグ（必須）
     confirm_po  = forms.BooleanField(
@@ -615,7 +616,6 @@ class QuickOrderForm(forms.Form):
 
         # === ③ 土日禁止チェック ===
         today_local = timezone.localdate()
-        # weekday(): 月=0..日=6 → 5(土),6(日) は不可
         if today_local.weekday() >= 5:
             self.add_error(None, "Jobs cannot be submitted on weekends.")
 
@@ -635,7 +635,7 @@ class QuickOrderForm(forms.Form):
             if PhantomJob.objects.filter(account=account, status=PhantomJob.Status.RUNNING).exists():
                 self.add_error(None, f"{account} already has a RUNNING job. Please wait until it finishes.")
 
-        # === ⑥ 必須チェック（パーフェクトオーダー／シナリオ記録）===
+        # === ⑥ 必須チェック ===
         if not cleaned.get("confirm_po"):
             self.add_error("confirm_po", "Make sure to confirm the perfect order of 20 / 80 / 320 EMA on the 1H timeframe.")
         if not cleaned.get("confirm_scn"):
@@ -655,12 +655,24 @@ class QuickOrderView(FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if PhantomJob.objects.exists():        
-            latest_job = PhantomJob.objects.order_by("-created_at").first()
-        else:
-            latest_job = None
 
+        # 最新ジョブ（参考表示）
+        latest_job = PhantomJob.objects.order_by("-created_at").first() if PhantomJob.objects.exists() else None
         context["latest_job"] = latest_job
+
+        # ★ OpenOrder / OpenPosition を全件そのまま渡す（アカウントで絞らない）
+        open_orders = OpenOrder.objects.all().order_by("account__account_id", "-ticket")
+        open_positions = OpenPosition.objects.all().order_by("account__account_id", "-ticket")
+        context["open_orders"] = open_orders
+        context["open_positions"] = open_positions
+
+        # ★ snapshot_ts はどちらかのテーブルの先頭1件から拾う（全件同一を前提）
+        snapshot_ts = (
+            open_orders.values_list("snapshot_ts", flat=True).first()
+            or open_positions.values_list("snapshot_ts", flat=True).first()
+        )
+        context["snapshot_ts"] = snapshot_ts
+
         return context
 
     def form_valid(self, form):
@@ -669,7 +681,6 @@ class QuickOrderView(FormView):
         sl      = form.cleaned_data["sl"]
         tp      = form.cleaned_data["tp"]
         RISK_PERCENT_DEFAULT = 3.5  # Risk% Fixed
-
         side = "BUY" if sl < tp else "SELL"
 
         try:
@@ -684,9 +695,8 @@ class QuickOrderView(FormView):
                     risk_percent=RISK_PERCENT_DEFAULT,
                     status=PhantomJob.Status.PENDING,
                 )
-                job.save()  # ここで model.clean() が走る → 競合時 ValidationError
+                job.save()
         except ValidationError as e:
-            # フォームに載せ替えて画面に返す
             for field, msgs in e.message_dict.items():
                 if field in form.fields:
                     for msg in msgs:
@@ -700,4 +710,5 @@ class QuickOrderView(FormView):
             self.request,
             f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT})."
         )
-        return redirect("order")
+        # 送信後は画面に戻る（アカウントは絞っていないため、単純リダイレクト）
+        return redirect(reverse("order"))
