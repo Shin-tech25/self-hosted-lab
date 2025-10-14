@@ -123,6 +123,21 @@
       appearance:none;
       -webkit-appearance:none;
     }
+    input[type="url"] {
+      width:100%;
+      box-sizing:border-box;
+      display:block;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      color: var(--text);
+      font-size:16px;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .04s ease;
+      outline: none;
+      appearance:none;
+      -webkit-appearance:none;
+    }
     select:hover,
     input:hover{ border-color:#cfd8e3; }
     select:focus,
@@ -549,6 +564,30 @@
               {% for e in form.tp.errors %}<div>{{ e }}</div>{% endfor %}
             </div>
           {% endif %}
+        </div>
+
+        <!-- Target EMA (optional) -->
+        <div class="field {% if form.target_ema.errors %}has-error{% endif %}">
+          <label for="{{ form.target_ema.id_for_label }}">Target EMA (1H)</label>
+          {{ form.target_ema }}
+          {% if form.target_ema.errors %}
+            <div class="err">
+              {% for e in form.target_ema.errors %}<div>{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          <div class="sub">Optional: choose your intended EMA touch/mean-revert target for this job.</div>
+        </div>
+
+        <!-- Scenario URL (optional) -->
+        <div class="field {% if form.scenario_url.errors %}has-error{% endif %}">
+          <label for="{{ form.scenario_url.id_for_label }}">Scenario URL (Wiki permalink)</label>
+          {{ form.scenario_url }}
+          {% if form.scenario_url.errors %}
+            <div class="err">
+              {% for e in form.scenario_url.errors %}<div>{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          <div class="sub">Link your scenario/trade note page (e.g., Wiki permalink).</div>
         </div>
 
         <div class="checklist">

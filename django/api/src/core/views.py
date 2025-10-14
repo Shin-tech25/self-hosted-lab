@@ -580,6 +580,24 @@ class QuickOrderForm(forms.Form):
     tp      = forms.FloatField(label="TP Price")
     # risk_percent = forms.FloatField(label="Risk％（任意）", required=False, initial=3.5)
 
+    # Target EMA
+    target_ema = forms.ChoiceField(
+        label="Target EMA (1H)",
+        choices=[("", "— Select —")] + list(PhantomJob.TargetEMA.choices),
+        required=True,
+    )
+
+    # シナリオURL
+    scenario_url = forms.URLField(
+        label="Scenario URL (Wiki permanent link)",
+        required=True,
+        widget=forms.URLInput(attrs={
+            "placeholder": "https://portal.mshin0509.com/<your-page>",
+            "inputmode": "url",
+            "autocomplete": "url",
+        })
+    )
+
     # サブミット前チェックのフラグ（必須）
     confirm_po  = forms.BooleanField(
         label="Confirmed perfect order of 20 / 80 / 320 EMA on 1H timeframe.",
@@ -682,6 +700,9 @@ class QuickOrderView(FormView):
         tp      = form.cleaned_data["tp"]
         RISK_PERCENT_DEFAULT = 3.5  # Risk% Fixed
         side = "BUY" if sl < tp else "SELL"
+        target_ema  = form.cleaned_data.get("target_ema") or None
+        scenario_url = form.cleaned_data.get("scenario_url") or None
+
 
         try:
             with transaction.atomic():
@@ -694,6 +715,8 @@ class QuickOrderView(FormView):
                     use_risk_lot=True,
                     risk_percent=RISK_PERCENT_DEFAULT,
                     status=PhantomJob.Status.PENDING,
+                    target_ema=target_ema,
+                    scenario_url=scenario_url,
                 )
                 job.save()
         except ValidationError as e:
@@ -708,7 +731,7 @@ class QuickOrderView(FormView):
 
         messages.success(
             self.request,
-            f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT})."
+            f"PhantomJob is submitted (Account: {account}, Symbol: {symbol}, Side: {side}, SL: {sl}, TP: {tp}, Use Risk: True, Risk Percent: {RISK_PERCENT_DEFAULT}, Target EMA: {target_ema}, URL: {scenario_url})."
         )
         # 送信後は画面に戻る（アカウントは絞っていないため、単純リダイレクト）
         return redirect(reverse("order"))
