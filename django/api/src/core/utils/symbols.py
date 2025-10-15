@@ -11,6 +11,7 @@ SYMBOL_CHOICES = [
     ("NZDJPY.oj1m", "NZDJPY.oj1m"),
     ("EURGBP.oj1m", "EURGBP.oj1m"),
     ("USDCHF.oj1m", "USDCHF.oj1m"),
+    ("USDCAD.oj1m", "USDCAD.oj1m"),
     ("USDJPY", "USDJPY"),
     ("EURUSD", "EURUSD"),
     ("EURJPY", "EURJPY"),
@@ -20,6 +21,7 @@ SYMBOL_CHOICES = [
     ("NZDJPY", "NZDJPY"),
     ("EURGBP", "EURGBP"),
     ("USDCHF", "USDCHF"),
+    ("USDCAD", "USDCAD"),
     ("USDJPY#", "USDJPY#"),
     ("EURUSD#", "EURUSD#"),
     ("EURJPY#", "EURJPY#"),
@@ -29,6 +31,7 @@ SYMBOL_CHOICES = [
     ("NZDJPY#", "NZDJPY#"),
     ("EURGBP#", "EURGBP#"),
     ("USDCHF#", "USDCHF#"),
+    ("USDCAD#", "USDCAD#"),
 ]
 
 # === 値リストだけ欲しい場合 ===
