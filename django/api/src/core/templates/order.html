@@ -685,6 +685,34 @@
       checks.forEach(c => c.addEventListener('change', syncSubmitState));
       syncSubmitState();
     })();
+    // ===== Silent auto refresh every 60 seconds =====
+    (function () {
+      const REFRESH_MS = 60_000;
+
+      function reloadWithBust() {
+        // Safari等のキャッシュ対策でタイムスタンプを付ける
+        const url = new URL(window.location.href);
+        url.searchParams.set('_r', Date.now().toString());
+        window.location.replace(url.toString());
+      }
+
+      function isUserEditing() {
+        const a = document.activeElement;
+        if (!a) return false;
+        const tag = a.tagName;
+        if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true;
+        return false;
+      }
+
+      function maybeReload() {
+        // タブが非表示中や編集中はスキップ
+        if (document.visibilityState !== 'visible') return;
+        if (isUserEditing()) return;
+        reloadWithBust();
+      }
+
+      setInterval(maybeReload, REFRESH_MS);
+    })();
   </script>
 </body>
 </html>
