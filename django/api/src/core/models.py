@@ -1,9 +1,8 @@
-import uuid
+from decimal import Decimal
 from django.core.exceptions import ValidationError
-from django.db import models, IntegrityError, transaction
+from django.db import models
 from django.db.models import Q, UniqueConstraint
 from django.utils import timezone
-from django.utils.deconstruct import deconstructible
 from .utils.magic import generate_magic
 from .utils.symbols import SYMBOL_CHOICES
 
@@ -172,87 +171,6 @@ class OpenPosition(models.Model):
         ordering  = ["-snapshot_ts", "-ticket"]
         unique_together = ("account", "ticket")
 
-
-# ---- 共有定数（単一のソース） --------------------------------------
-SLOT_RISK_RETURN_DEFAULT = {
-    "Q1k1": {"risk": 1.0, "ret": 1.0},
-    "Q1k2": {"risk": 1.0, "ret": 2.0},
-    "Q1k3": {"risk": 1.0, "ret": 3.0},
-    "Midk1": {"risk": 2.0, "ret": 1.0},
-    "Midk2": {"risk": 2.0, "ret": 2.0},
-    "Q3k1": {"risk": 3.0, "ret": 1.0},
-}
-
-# ---- バリデータ（マイグレーション直列化OK） -------------------------
-@deconstructible
-class PathAnalysisValidator:
-    def __init__(self, steps=("Q1", "Mid", "Q3", "TP", "SL")):
-        self.steps = tuple(steps)
-
-    def __call__(self, value):
-        if value is None:
-            return
-        if not isinstance(value, list) or not value:
-            raise ValidationError("path_analysis は非空の配列で指定してください。例: ['Q1','Mid','Q3','TP']")
-        for step in value:
-            if not isinstance(step, str) or step not in self.steps:
-                raise ValidationError(f"path_analysis に不正な要素があります: {step}")
-        if value[-1] not in {"TP", "SL"}:
-            raise ValidationError("path_analysis の最終要素は 'TP' または 'SL' にしてください。")
-
-
-@deconstructible
-class RAnalysisValidator:
-    def __init__(self,
-                 slot_map=None,
-                 allowed_outcomes=("TP", "SL"),
-                 extra_keys=("by_slot_R", "total_R")):
-        self.slot_map = dict(slot_map or SLOT_RISK_RETURN_DEFAULT)
-        self.allowed_outcomes = set(allowed_outcomes)
-        self.slot_keys = frozenset(self.slot_map.keys())
-        self.extra_keys = frozenset(extra_keys)
-
-    def __call__(self, value):
-        if value is None:
-            return
-        if not isinstance(value, dict):
-            raise ValidationError("r_analysis はオブジェクト(JSON)で指定してください。")
-
-        allowed_keys = self.slot_keys | self.extra_keys
-        unknown = set(value.keys()) - allowed_keys
-        if unknown:
-            raise ValidationError(f"r_analysis に未対応のキーがあります: {sorted(unknown)}")
-
-        # スロット配列の検証
-        for slot in self.slot_keys:
-            if slot in value:
-                seq = value[slot]
-                if not isinstance(seq, list):
-                    raise ValidationError(f"r_analysis['{slot}'] は配列で指定してください。")
-                for i, outcome in enumerate(seq):
-                    if outcome not in self.allowed_outcomes:
-                        raise ValidationError(f"r_analysis['{slot}'][{i}] は 'TP' か 'SL' を指定してください。")
-
-        # 任意集計フィールド（存在する場合だけ軽く型チェック）
-        by_slot = value.get("by_slot_R")
-        if by_slot is not None:
-            if not isinstance(by_slot, dict):
-                raise ValidationError("r_analysis['by_slot_R'] はオブジェクトで指定してください。")
-            for k, v in by_slot.items():
-                if k not in self.slot_keys:
-                    raise ValidationError(f"r_analysis['by_slot_R'] に不明なスロットがあります: {k}")
-                try:
-                    float(v)
-                except Exception:
-                    raise ValidationError(f"r_analysis['by_slot_R']['{k}'] は数値を指定してください。")
-
-        total_r = value.get("total_R")
-        if total_r is not None:
-            try:
-                float(total_r)
-            except Exception:
-                raise ValidationError("r_analysis['total_R'] は数値を指定してください。")
-
 class PhantomJob(models.Model):
     class Side(models.TextChoices):
         BUY = "BUY", "Buy"
@@ -269,27 +187,6 @@ class PhantomJob(models.Model):
         EMA20 = "EMA20", "1H 20EMA"
         EMA80 = "EMA80", "1H 80EMA"
         EMA210 = "EMA210", "1H 320EMA"
-    
-    # 計算ヘルパ（自動実行しない）
-    @classmethod
-    def compute_r_totals(cls, r_analysis: dict):
-        if not isinstance(r_analysis, dict):
-            raise ValueError("compute_r_totals の引数は dict を想定しています。")
-        by_slot_R = {}
-        total = 0.0
-        for slot, cfg in cls.SLOT_RISK_RETURN.items():
-            seq = r_analysis.get(slot, [])
-            if not isinstance(seq, list):
-                continue
-            net = 0.0
-            for outcome in seq:
-                if outcome == "TP":
-                    net += float(cfg["ret"])
-                elif outcome == "SL":
-                    net -= float(cfg["risk"])
-            by_slot_R[slot] = net
-            total += net
-        return by_slot_R, round(total, 6)
     
     id = models.BigAutoField(primary_key=True)
     magic = models.BigIntegerField(default=generate_magic, unique=True, db_index=True)
@@ -342,17 +239,20 @@ class PhantomJob(models.Model):
         help_text="Target EMA for the trade (1H 20EMA or 80EMA)"
     )
 
+    total_pnl = models.DecimalField(
+        max_digits=20, decimal_places=2, default=Decimal("0.00"),
+        help_text="Sum of ClosedPosition.profit for this job (account currency)."
+    )
+
     # path_analysis（配列 JSON）— 直列化可能な Validator を使用
     path_analysis = models.JSONField(
         null=True, blank=True,
-        validators=[PathAnalysisValidator()],
         help_text="ex: ['Q1','Mid','Q3','TP'] or ['Q1','SL']"
     )
 
     # r_analysis（辞書 JSON）— 直列化可能な Validator を使用
     r_analysis = models.JSONField(
         null=True, blank=True,
-        validators=[RAnalysisValidator(slot_map=SLOT_RISK_RETURN_DEFAULT)],
         help_text=(
             "ex: { 'Q1': ['TP','TP'], 'Mid': ['SL'], 'Q3': [], 'by_slot_R': {'Q1':2.0,'Mid':-2.0,'Q3':0.0}, 'total_R': 0.0 } "
             "If required, 'by_slot_R' and 'total_R' can be computed externally and filled in."
