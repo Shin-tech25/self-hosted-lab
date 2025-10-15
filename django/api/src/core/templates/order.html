@@ -148,7 +148,7 @@
     }
 
     /* ================================================================
-       Animated Submit Button
+      Animated Submit Button
     ================================================================= */
     .submit{
       width: 100%;
@@ -354,7 +354,6 @@
     .table td{ padding:6px 8px; color:#1f2937; border-bottom:1px dashed #e5e7eb; white-space: nowrap; }
     .table tr:last-child td{ border-bottom:none; }
     .nowrap{ white-space: nowrap; }
-    .cell-wrap{ white-space: normal; word-break: break-all; }
 
     /* ---------------- Print ---------------- */
     @media print {
@@ -373,8 +372,39 @@
       /* スマホで不要列を隠す */
       .sm-hide{ display:none; }
 
-      /* 行間＆文字サイズ微調整 */
-      .table th, .table td{ padding:6px 8px; font-size:13px; }
+      /* === 以下 改良版：Opened列の見た目＆余白圧縮 === */
+      .card{ padding:16px; }
+      .latest-job, .grid-card, .checklist{ padding:10px 12px; }
+
+      .table-wrap{
+        border-radius:8px;
+        box-shadow:none;
+      }
+      .table{
+        min-width:680px; /* 横スライド量削減 */
+      }
+      .table th,
+      .table td{
+        padding:4px 6px;
+        font-size:12.5px;
+      }
+      .table .nowrap{
+        font-size:12px;
+        letter-spacing:.01em;
+      }
+      .table thead th:last-child,
+      .table tbody td:last-child{
+        padding-right:4px;
+      }
+      .table th{
+        font-weight:600;
+        font-size:12.5px;
+      }
+      .latest-table th,
+      .latest-table td{
+        padding:4px 6px;
+        font-size:12.5px;
+      }
     }
   </style>
 </head>
@@ -464,7 +494,7 @@
                     <td class="sm-hide">{{ o.sl }}</td>
                     <td class="sm-hide">{{ o.tp }}</td>
                     <td class="sm-hide">{{ o.magic }}</td>
-                    <td class="cell-wrap">{{ o.comment }}</td>
+                    <td>{{ o.comment }}</td>
                     <td class="nowrap">{{ o.placed_at|date:"Y-m-d H:i" }}</td>
                     <td class="nowrap sm-hide">{{ o.expires_at|date:"Y-m-d H:i" }}</td>
                   </tr>
@@ -510,7 +540,7 @@
                     <td class="sm-hide">{{ p.sl }}</td>
                     <td class="sm-hide">{{ p.tp }}</td>
                     <td class="sm-hide">{{ p.magic }}</td>
-                    <td class="cell-wrap">{{ p.comment }}</td>
+                    <td>{{ p.comment }}</td>
                     <td class="nowrap">{{ p.open_time|date:"Y-m-d H:i" }}</td>
                   </tr>
                 {% endfor %}
