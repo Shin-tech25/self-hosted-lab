@@ -188,7 +188,7 @@ class PhantomJobAdmin(admin.ModelAdmin):
     )
     list_filter = (
         ("finished_at", DateTimeRangeFilter),
-        "account_id", "status", "symbol", "side",
+        "account_id", "symbol", "target_ema", "status", "side",
     )
     search_fields = ("=magic",)
     search_help_text = "Search by Magic Number"
