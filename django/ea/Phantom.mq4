@@ -5,8 +5,8 @@
 //| Description:                                                     |
 //| - Integrates with Django: claim / status poll / complete / error |
 //| - RESUME対応: claimでRESUME/PENDINGどちらも取得。                 |
-//|   RESUME時はDjangoのruntime_params（フラットキー）をそのまま採用 |
-//|   PENDING時はロット計算→PATCHでruntime_paramsを保存              |
+//|   RESUME時はDjangoのruntime_paramsをGETで取得し厳格に検証採用     |
+//|   PENDING時はロット計算→POSTでruntime_paramsを保存               |
 //| - 境界到達またはサーバ指示(COMPLETED)時のみクローズ              |
 //| - Push notifications (when NOTIFY_PUSH=true)                     |
 //| - Computes & fixes job lot size once per job; fills only missing |
@@ -18,7 +18,7 @@
 //| Contact:     (add your email or URL)                             |
 //| Repository:  (add your repo URL)                                 |
 //|                                                                  |
-//| Version:     1.210                                               |
+//| Version:     1.212                                               |
 //| Build Date:  2025-10-16                                          |
 //| Platform:    MetaTrader 4 (MQL4)                                 |
 //| Symbol Mode: Works with 3/5-digit and JPY 2/3-digit quotes       |
@@ -28,7 +28,7 @@
 //| @file        Phantom.mq4                                         |
 //| @brief       Grid trading EA coordinated by a Django backend.    |
 //| @author      Shin Mikami                                         |
-//| @version     1.210                                               |
+//| @version     1.212                                               |
 //| @date        2025-10-16                                          |
 //|                                                                  |
 //| Requirements:                                                    |
@@ -58,10 +58,13 @@
 //| - Fallback lot shrink on insufficient margin (134)               |
 //|                                                                  |
 //| Change Log:                                                      |
-//| - 1.2.1 (2025-10-16): RESUME設計対応。claimでRESUME/PENDING両対応 |
-//|   ・RESUME時はruntime_params(フラットキー)をそのまま採用          |
-//|   ・PENDING時は従来計算→PATCHでruntime_params保存                 |
-//|   ・OnDeinitでの全決済を削除（保持デフォルト）                    |
+//| - 1.2.1.2 (2025-10-16):                                         |
+//|   ・claim応答の prev_status/resumed を使ってRESUME由来を判定       |
+//|   ・RESUME時は GET /phantom-jobs/<id>/ の runtime_params を        |
+//|     JsonExtractObject で抽出し、必須キー(job_lot/symbol/side)     |
+//|     を厳格バリデーション（不正/未取得なら即エラー中断）           |
+//|   ・side を大文字化して比較                                       |
+//| - 1.2.1.1 (2025-10-16): RESUME判定/検証の初期実装                 |
 //| - 1.2.0 (2025-10-11): Email notifications等                      |
 //| - 1.1.0: Fixed job-lot computation & margin cap per grid slots   |
 //| - 1.0.0: Initial public version                                  |
@@ -73,8 +76,7 @@
 
 #property copyright "Shin Mikami"
 #property link      "(add your email or URL)"
-#property version   "1.210"
-
+#property version   "1.212"
 #property strict
 
 // ======================== Inputs ==================================
@@ -126,7 +128,6 @@ bool   CooldownPassed(const string tag){
 void   TouchCooldown(const string tag){ GlobalVariableSet(GVName(tag),TimeCurrent()); }
 
 // ===== Tick readiness =============================================
-// ※ デフォルト引数は使わない（input変数は使えないため）
 bool EnsureTickReady(const string sym, int retries, int sleep_ms){
    if(!SymbolSelect(sym,true)){
       Print("SymbolSelect failed: ", sym, " err=",GetLastError());
@@ -159,7 +160,7 @@ bool HttpRequest(const string method,const string url,const string body,string &
 }
 bool HttpPOST (string path,string body,string &resp){ return HttpRequest("POST" ,API_BASE+path,body,resp); }
 bool HttpGET  (string path,           string &resp){ return HttpRequest("GET"  ,API_BASE+path,"",resp);  }
-bool HttpPATCH(string path,string body,string &resp){ return HttpRequest("PATCH",API_BASE+path,body,resp); }
+bool HttpPATCH(string path,string body,string &resp){ return HttpRequest("PATCH",API_BASE+path,body,resp); } // 予備
 
 // ======================= JSON tiny get =============================
 string _Trim(const string s){ return StringTrimLeft(StringTrimRight(s)); }
@@ -193,8 +194,6 @@ string JsonEscape(const string s) {
    StringReplace(t, "\n", "\\n");
    return t;
 }
-
-// "a,b,c" -> ["a","b","c"] のJSON配列文字列を作る簡易化
 string CsvToJsonArray(const string csv) {
    string c = _Trim(csv);
    if(c=="") return "[]";
@@ -204,6 +203,28 @@ string CsvToJsonArray(const string csv) {
    StringReplace(tmp, ",", "\",\"");
    out += tmp + "\"]";
    return out;
+}
+
+// --- JSON: 指定キーのオブジェクト { ... } を抜き出す ----------------
+bool JsonExtractObject(const string json, const string key, string &out) {
+   string pat="\""+key+"\"";
+   int i = StringFind(json, pat);
+   if(i < 0) return false;
+   int b = StringFind(json, "{", i + StringLen(pat));
+   if(b < 0) return false;
+   int depth = 0;
+   for(int p=b; p<StringLen(json); p++){
+      uchar c = json[p];
+      if(c=='{') depth++;
+      else if(c=='}'){
+         depth--;
+         if(depth==0){
+            out = StringSubstr(json, b, p - b + 1);
+            return true;
+         }
+      }
+   }
+   return false;
 }
 
 // ======================= Notify (Push only) ========================
@@ -246,12 +267,10 @@ void NotifyError(const string detail){
 // ======================= Email Utils ===============================
 bool EmailSendTerminal(const string subject, const string body) {
    ResetLastError();
-   bool ok = SendMail(subject, body);   // 受信者はMT4側設定のTo
+   bool ok = SendMail(subject, body);
    if(!ok) Print("SendMail failed. err=", GetLastError());
    return ok;
 }
-
-// Django経由 (APIモード)
 bool EmailSendViaAPI(const string subject, const string body, const string to_csv) {
    string payload = StringFormat(
       "{\"subject\":\"%s\",\"body\":\"%s\",\"to\":%s}",
@@ -262,8 +281,6 @@ bool EmailSendViaAPI(const string subject, const string body, const string to_cs
    if(!ok) Print("EmailSendViaAPI failed resp=", resp);
    return ok;
 }
-
-// フラグ判定はしない（常に送信）／呼び出し側で NOTIFY_EMAIL を見る
 bool SendEmail(const string subject, const string body) {
    string subj = EMAIL_SUBJECT_PREFIX + " " + subject;
    if(EMAIL_MODE=="TERMINAL") return EmailSendTerminal(subj, body);
@@ -306,50 +323,34 @@ double NormalizeLotToBroker(double lot){
    if(lot<minLot) lot=minLot;
    return NormalizeDouble(lot,2);
 }
-
-// --- broker constraints helpers -----------------------------------
 double PointFor(const string sym){ return MarketInfo(sym, MODE_POINT); }
-
 double MinStopDistancePoints(const string sym){
    double pt   = PointFor(sym);
-   int    slvl = (int)MarketInfo(sym, MODE_STOPLEVEL);   // broker指定(ポイント)
+   int    slvl = (int)MarketInfo(sym, MODE_STOPLEVEL);
    return MathMax(0, slvl) * pt;
 }
-
 double FreezeDistancePoints(const string sym){
    double pt    = PointFor(sym);
    int    flvl  = (int)MarketInfo(sym, MODE_FREEZELEVEL);
    return MathMax(0, flvl) * pt;
 }
-
-// ptypeに応じてentryを最小距離ぶん離す。返り値<=0 なら不成立（スキップ推奨）
 double SnapEntryToValidDistance(const string sym, int ptype, double desired){
    RefreshRates();
    double bid = MarketInfo(sym, MODE_BID);
    double ask = MarketInfo(sym, MODE_ASK);
    double mind= MinStopDistancePoints(sym);
-
-   if(ptype==OP_BUYLIMIT){
-      if(ask - desired < mind) desired = ask - mind;
-   }else if(ptype==OP_BUYSTOP){
-      if(desired - ask < mind) desired = ask + mind;
-   }else if(ptype==OP_SELLLIMIT){
-      if(desired - bid < mind) desired = bid + mind;
-   }else if(ptype==OP_SELLSTOP){
-      if(bid - desired < mind) desired = bid - mind;
-   }
+   if(ptype==OP_BUYLIMIT){ if(ask - desired < mind) desired = ask - mind; }
+   else if(ptype==OP_BUYSTOP){ if(desired - ask < mind) desired = ask + mind; }
+   else if(ptype==OP_SELLLIMIT){ if(desired - bid < mind) desired = bid + mind; }
+   else if(ptype==OP_SELLSTOP){ if(bid - desired < mind) desired = bid - mind; }
    return NpFor(sym, desired);
 }
-
-// 1ロットで「SL〜TPの1/4だけ逆行」したときの損失額（口座通貨）
 double PerLotLossForQuarterRange(){
    double ts=MarketInfo(JobSymbol,MODE_TICKSIZE), tv=MarketInfo(JobSymbol,MODE_TICKVALUE);
    if(ts<=0 || tv<=0) return 0.0;
    double qr=MathAbs(RtTPPrice-RtSLPrice)/4.0;
    return (qr/ts)*tv;
 }
-
-// --- 方向・全クローズ・境界判定
 bool DirectionOK(){
    if(RtSide=="BUY"  && !(RtTPPrice>RtSLPrice)) { Print("BUYならTP>SL"); return false; }
    if(RtSide=="SELL" && !(RtTPPrice<RtSLPrice)) { Print("SELLならTP<SL"); return false; }
@@ -395,7 +396,7 @@ double CapLotByMargin(double lot_base, int grid_slots){
    if(mreq <= 0 || fm <= 0) return 0.0;
 
    double max_total_lot = (fm * MARGIN_SAFETY) / mreq;
-   int slots = MathMax(1, grid_slots); // ゼロ割・過小割り防止
+   int slots = MathMax(1, grid_slots);
    double max_per_slot  = max_total_lot / slots;
 
    double final_lot = MathMin(lot_base, max_per_slot);
@@ -426,19 +427,17 @@ void SaveRuntimeParams(){
    );
 
    string resp;
-   // ※ サーバ側に POST /phantom-jobs/<id>/runtime-params/ を用意しておくこと
    bool ok = HttpPOST(StringFormat("/phantom-jobs/%d/runtime-params/", JobId), payload, resp);
    if(!ok){
       Print("SaveRuntimeParams POST failed resp=", resp);
       return;
    }
-   // 成功時ログ（任意）
    Print("SaveRuntimeParams posted: ", resp);
 }
 
-// claim：PENDING/RESUME両対応（RESUME優先はサーバ側実装）
-// RESUME時…フラットキー(job_lot等)が含まれる → それらをそのまま採用
-// PENDING時…従来どおりロット算出→PATCHでruntime_params保存
+// claim：PENDING/RESUME両対応
+// ・RESUME: claim応答の prev_status/resumed で判定 → GET詳細で runtime_params を抽出し厳格検証
+// ・PENDING: ロット算出→POSTでruntime_params保存
 bool ClaimLatestPending(){
    string cur=Symbol();
    string body="{\"account_id\":\""+ACCOUNT_ID+"\",\"symbol\":\""+cur+"\"}";
@@ -454,16 +453,18 @@ bool ClaimLatestPending(){
    RtSLPrice     =JsonGetNum(resp,"sl_price",0.0);
    RtTPPrice     =JsonGetNum(resp,"tp_price",0.0);
 
-   // 追加: フラット化されたruntime_paramsの候補を読む（RESUME時のみ入っている想定）
+   string prev_status = JsonGetStr(resp, "prev_status", "");
+   bool   resumed_flag= JsonGetBool(resp, "resumed", false);
+
+   // フラットキー（RESUME時にclaim応答へ同梱してくる場合も拾う。無くてもOK）
    int    planned_from_api = (int)JsonGetNum(resp,"planned_slots",-1);
    if(planned_from_api>0) RtPlannedSlots=planned_from_api;
    int    slip_from_api = (int)JsonGetNum(resp,"slippage",-1); if(slip_from_api>=0) RtSlippage=slip_from_api;
    double tol_from_api  = JsonGetNum(resp,"tol_price_pips",-1); if(tol_from_api>0) RtTolPricePips=tol_from_api;
    int    cd_from_api   = (int)JsonGetNum(resp,"cooldown_sec",-1); if(cd_from_api>0) RtCooldownSec=cd_from_api;
    double mlc_from_api  = JsonGetNum(resp,"max_lot_cap",-1); if(mlc_from_api>0) RtMaxLotCap=mlc_from_api;
-   double joblot_from_api = JsonGetNum(resp,"job_lot",-1.0);
 
-   // --- Tick準備チェック（ここで失敗ならアボート）
+   // --- Tick準備チェック
    if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
       int e=GetLastError();
       string msg=StringFormat("Tick not ready after claim. sym=%s err=%d",JobSymbol,e);
@@ -475,27 +476,67 @@ bool ClaimLatestPending(){
       Print(msg); ReportError(msg); JobId=-1; JobStatus=""; IsActive=false; return false;
    }
 
-   // サーバはRUNNINGを返す想定。RESUME由来かどうかは job_lot 有無で判定
-   bool is_resume = (joblot_from_api>0);
+   // ====== RESUME 判定 ======
+   bool is_resume = (prev_status == "RESUME") || resumed_flag;
 
    if(is_resume){
-      // === RESUME: サーバ保存のランタイムをそのまま採用
+      // 1) ジョブ詳細から runtime_params を抽出（ネスト対応）
+      string jobJson;
+      if(!HttpGET(StringFormat("/phantom-jobs/%d/", JobId), jobJson)){
+         ReportError("RESUME: failed to GET job detail for runtime_params.");
+         JobId=-1; JobStatus=""; IsActive=false; return false;
+      }
+
+      string rpJson="";
+      if(!JsonExtractObject(jobJson, "runtime_params", rpJson)){
+         ReportError("RESUME: runtime_params missing. abort.");
+         JobId=-1; JobStatus=""; IsActive=false; return false;
+      }
+
+      // 2) 必須キー（runtime_params内部のみを見る）
+      double joblot_from_api = JsonGetNum(rpJson, "job_lot", 0.0);
+      string symbol_from_api = JsonGetStr(rpJson, "symbol", "");
+      string side_from_api   = JsonGetStr(rpJson, "side", "");
+      StringToUpper(side_from_api);
+
+      if(joblot_from_api <= 0.0 || symbol_from_api=="" || (side_from_api!="BUY" && side_from_api!="SELL")){
+         Print(StringFormat("DEBUG RESUME rp invalid: lot=%G sym=%s side=%s", joblot_from_api, symbol_from_api, side_from_api));
+         ReportError("RESUME: invalid or missing runtime_params (job_lot/symbol/side).");
+         JobId=-1; JobStatus=""; IsActive=false; return false;
+      }
+
+      // 3) 任意パラメータ
+      int    planned_slots = (int)JsonGetNum(rpJson, "planned_slots", 0);
+      int    slippage_api  = (int)JsonGetNum(rpJson, "slippage", -1);
+      double tol_api       = JsonGetNum(rpJson, "tol_price_pips", -1);
+      int    cooldown_api  = (int)JsonGetNum(rpJson, "cooldown_sec", -1);
+      double maxcap_api    = JsonGetNum(rpJson, "max_lot_cap", -1);
+
+      // 4) 反映
       RtUseRiskLot=false;
-      RtJobLot = NormalizeLotToBroker(joblot_from_api);
-      IsActive=(JobId>0 && JobStatus=="RUNNING");
+      RtJobLot       = NormalizeLotToBroker(joblot_from_api);
+      JobSymbol      = symbol_from_api;
+      RtSide         = side_from_api;
+      if(planned_slots>0) RtPlannedSlots = planned_slots;
+      if(slippage_api>=0) RtSlippage     = slippage_api;
+      if(tol_api>0)       RtTolPricePips = tol_api;
+      if(cooldown_api>0)  RtCooldownSec  = cooldown_api;
+      if(maxcap_api>0)    RtMaxLotCap    = maxcap_api;
+
+      IsActive = (JobId>0); // すでにRUNNING化済み
       if(IsActive){
-         Print(StringFormat("CLAIMED(RESUME) job=%d sym=%s magic=%d lot=%.2f planned=%d",
+         Print(StringFormat("RESUMED job=%d sym=%s magic=%d lot=%.2f planned=%d",
                JobId, JobSymbol, RtMagic, RtJobLot, RtPlannedSlots));
          PausedBoundary=false; _sendFailCount=0; NotifyStart();
       }
       return IsActive;
    }
 
-   // === PENDING: 従来計算→cap→PATCHでruntime_params保存
+   // ====== PENDING：ロット算出→POSTでruntime_params保存 ======
    RtUseRiskLot=true;
-   IsActive=(JobId>0 && JobStatus=="RUNNING");
+   IsActive=(JobId>0 && (JobStatus=="RUNNING" || JobStatus=="PENDING"));
    if(IsActive){
-      Print("CLAIMED(PENDING) job id=",JobId," magic=",RtMagic," side=",RtSide," symbol=",JobSymbol," status=",JobStatus);
+      Print("CLAIMED job id=",JobId," magic=",RtMagic," side=",RtSide," symbol=",JobSymbol," status=",JobStatus);
       PausedBoundary=false; _sendFailCount=0; NotifyStart();
 
       double lot_base = CalcRiskLotCore();
@@ -509,8 +550,7 @@ bool ClaimLatestPending(){
          IsActive=false; JobId=-1; JobStatus=""; return false;
       }
 
-      // PATCH保存
-      SaveRuntimeParams();
+      SaveRuntimeParams(); // POST保存
 
       Print(StringFormat("[JOBLOT] job=%d sym=%s magic=%d planned=%d lot=%.2f",
             JobId, JobSymbol, RtMagic, RtPlannedSlots, RtJobLot));
