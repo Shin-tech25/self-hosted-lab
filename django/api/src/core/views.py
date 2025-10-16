@@ -595,35 +595,35 @@ class PhantomJobViewSet(viewsets.ModelViewSet):
 
         return Response(data, status=status.HTTP_200_OK)
         
-        @action(detail=True, methods=["post"], url_path="runtime-params")
-        def set_runtime_params(self, request, pk=None):
-            job = self.get_object()
-            # 空JSON {} も許容
-            params = request.data if isinstance(request.data, dict) else {}
-            job.runtime_params = params
-            job.save(update_fields=["runtime_params"])
-            return Response({"ok": True}, status=status.HTTP_200_OK)
+    @action(detail=True, methods=["post"], url_path="runtime-params")
+    def set_runtime_params(self, request, pk=None):
+        job = self.get_object()
+        # 空JSON {} も許容
+        params = request.data if isinstance(request.data, dict) else {}
+        job.runtime_params = params
+        job.save(update_fields=["runtime_params"])
+        return Response({"ok": True}, status=status.HTTP_200_OK)
 
-        @action(detail=True, methods=["post", "patch"], url_path="complete")
-        def complete(self, request, pk=None):
-            job = self.get_object()
-            if job.status != PhantomJob.Status.RUNNING:
-                return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
-            job.status = PhantomJob.Status.COMPLETED
-            job.finished_at = timezone.now()
-            job.save(update_fields=["status", "finished_at"])
-            return Response({"ok": True}, status=status.HTTP_200_OK)
+    @action(detail=True, methods=["post", "patch"], url_path="complete")
+    def complete(self, request, pk=None):
+        job = self.get_object()
+        if job.status != PhantomJob.Status.RUNNING:
+            return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
+        job.status = PhantomJob.Status.COMPLETED
+        job.finished_at = timezone.now()
+        job.save(update_fields=["status", "finished_at"])
+        return Response({"ok": True}, status=status.HTTP_200_OK)
 
-        @action(detail=True, methods=["post", "patch"], url_path="error")
-        def error(self, request, pk=None):
-            job = self.get_object()
-            if job.status not in (PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.RESUME):
-                return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
-            job.status       = PhantomJob.Status.ERROR
-            job.error_detail = request.data.get("error_detail") or job.error_detail
-            job.failed_at    = timezone.now()
-            job.save(update_fields=["status", "error_detail", "failed_at"])
-            return Response({"ok": True}, status=status.HTTP_200_OK)
+    @action(detail=True, methods=["post", "patch"], url_path="error")
+    def error(self, request, pk=None):
+        job = self.get_object()
+        if job.status not in (PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.RESUME):
+            return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
+        job.status       = PhantomJob.Status.ERROR
+        job.error_detail = request.data.get("error_detail") or job.error_detail
+        job.failed_at    = timezone.now()
+        job.save(update_fields=["status", "error_detail", "failed_at"])
+        return Response({"ok": True}, status=status.HTTP_200_OK)
 
 class QuickOrderForm(forms.Form):
     account = forms.ModelChoiceField(label="Account", queryset=Account.objects.all().order_by("account_id"))
