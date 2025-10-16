@@ -4,7 +4,10 @@
 //|                                                                  |
 //| Description:                                                     |
 //| - Integrates with Django: claim / status poll / complete / error |
-//| - Closes all positions on boundary hit or when server requests   |
+//| - RESUME対応: claimでRESUME/PENDINGどちらも取得。                 |
+//|   RESUME時はDjangoのruntime_params（フラットキー）をそのまま採用 |
+//|   PENDING時はロット計算→PATCHでruntime_paramsを保存              |
+//| - 境界到達またはサーバ指示(COMPLETED)時のみクローズ              |
 //| - Push notifications (when NOTIFY_PUSH=true)                     |
 //| - Computes & fixes job lot size once per job; fills only missing |
 //|   pending orders                                                 |
@@ -15,8 +18,8 @@
 //| Contact:     (add your email or URL)                             |
 //| Repository:  (add your repo URL)                                 |
 //|                                                                  |
-//| Version:     1.200                                               |
-//| Build Date:  2025-10-11                                          |
+//| Version:     1.210                                               |
+//| Build Date:  2025-10-16                                          |
 //| Platform:    MetaTrader 4 (MQL4)                                 |
 //| Symbol Mode: Works with 3/5-digit and JPY 2/3-digit quotes       |
 //|                                                                  |
@@ -25,8 +28,8 @@
 //| @file        Phantom.mq4                                         |
 //| @brief       Grid trading EA coordinated by a Django backend.    |
 //| @author      Shin Mikami                                         |
-//| @version     1.200                                               |
-//| @date        2025-10-11                                          |
+//| @version     1.210                                               |
+//| @date        2025-10-16                                          |
 //|                                                                  |
 //| Requirements:                                                    |
 //| - MT4 terminal configured for WebRequest to API_BASE             |
@@ -55,8 +58,11 @@
 //| - Fallback lot shrink on insufficient margin (134)               |
 //|                                                                  |
 //| Change Log:                                                      |
-//| - 1.2.0 (2025-10-11): Email notifications (TERMINAL/API modes),  |
-//|   unified NOTIFY_EMAIL flag, JSON escaping helpers, minor polish |
+//| - 1.2.1 (2025-10-16): RESUME設計対応。claimでRESUME/PENDING両対応 |
+//|   ・RESUME時はruntime_params(フラットキー)をそのまま採用          |
+//|   ・PENDING時は従来計算→PATCHでruntime_params保存                 |
+//|   ・OnDeinitでの全決済を削除（保持デフォルト）                    |
+//| - 1.2.0 (2025-10-11): Email notifications等                      |
 //| - 1.1.0: Fixed job-lot computation & margin cap per grid slots   |
 //| - 1.0.0: Initial public version                                  |
 //|                                                                  |
@@ -67,7 +73,7 @@
 
 #property copyright "Shin Mikami"
 #property link      "(add your email or URL)"
-#property version   "1.200"
+#property version   "1.210"
 
 #property strict
 
@@ -96,9 +102,9 @@ int     RtSlippage=3; double RtTolPricePips=2.5; int RtCooldownSec=8;
 bool    IsActive=false, PausedBoundary=false; datetime _lastClaimTry=0, _lastStatusPoll=0;
 int     _sendFailCount=0, _sendFailLimit=3;
 
-// === Job 固有パラメータ（本仕様の中心） ============================
+// === Job 固有パラメータ ===========================================
 int     RtPlannedSlots=6;     // 想定スロット数（デフォ: Q1×3, MID×2, Q3×1）
-double  RtJobLot=0.0;         // Job確定時に一度だけ算出・固定するロット
+double  RtJobLot=0.0;         // Job確定時に一度だけ算出 or サーバから取得して固定
 
 // ======================== Utils ===================================
 double PipFor(string sym){
@@ -151,8 +157,9 @@ bool HttpRequest(const string method,const string url,const string body,string &
    if(st>=200 && st<300) return true;
    Print("HTTP ",method," ",url," -> ",st," resp=",resp); return false;
 }
-bool HttpPOST(string path,string body,string &resp){ return HttpRequest("POST",API_BASE+path,body,resp); }
-bool HttpGET (string path,           string &resp){ return HttpRequest("GET", API_BASE+path,"",resp);  }
+bool HttpPOST (string path,string body,string &resp){ return HttpRequest("POST" ,API_BASE+path,body,resp); }
+bool HttpGET  (string path,           string &resp){ return HttpRequest("GET"  ,API_BASE+path,"",resp);  }
+bool HttpPATCH(string path,string body,string &resp){ return HttpRequest("PATCH",API_BASE+path,body,resp); }
 
 // ======================= JSON tiny get =============================
 string _Trim(const string s){ return StringTrimLeft(StringTrimRight(s)); }
@@ -191,7 +198,6 @@ string JsonEscape(const string s) {
 string CsvToJsonArray(const string csv) {
    string c = _Trim(csv);
    if(c=="") return "[]";
-   // カンマ分割（簡易）
    string out = "[\"";
    string tmp = c;
    StringReplace(tmp, "\"", "\\\""); // 念のため
@@ -245,7 +251,7 @@ bool EmailSendTerminal(const string subject, const string body) {
    return ok;
 }
 
-// Django経由 (APIモード) … /notify/email は例（サーバ側で実装）
+// Django経由 (APIモード)
 bool EmailSendViaAPI(const string subject, const string body, const string to_csv) {
    string payload = StringFormat(
       "{\"subject\":\"%s\",\"body\":\"%s\",\"to\":%s}",
@@ -406,6 +412,33 @@ bool ReportError(const string detail){
    NotifyError(detail);
    return ok;
 }
+
+// runtime_params をPOST保存（PENDINGで初期決定後に1回呼ぶ）
+void SaveRuntimeParams(){
+   if(JobId <= 0) return;
+
+   string payload = StringFormat(
+     "{\"runtime_params\":{\"symbol\":\"%s\",\"side\":\"%s\",\"sl_price\":%G,\"tp_price\":%G,"
+     "\"planned_slots\":%d,\"job_lot\":%G,\"slippage\":%d,\"tol_price_pips\":%G,"
+     "\"cooldown_sec\":%d,\"max_lot_cap\":%G}}",
+     JobSymbol, RtSide, RtSLPrice, RtTPPrice, RtPlannedSlots, RtJobLot, RtSlippage,
+     RtTolPricePips, RtCooldownSec, RtMaxLotCap
+   );
+
+   string resp;
+   // ※ サーバ側に POST /phantom-jobs/<id>/runtime-params/ を用意しておくこと
+   bool ok = HttpPOST(StringFormat("/phantom-jobs/%d/runtime-params/", JobId), payload, resp);
+   if(!ok){
+      Print("SaveRuntimeParams POST failed resp=", resp);
+      return;
+   }
+   // 成功時ログ（任意）
+   Print("SaveRuntimeParams posted: ", resp);
+}
+
+// claim：PENDING/RESUME両対応（RESUME優先はサーバ側実装）
+// RESUME時…フラットキー(job_lot等)が含まれる → それらをそのまま採用
+// PENDING時…従来どおりロット算出→PATCHでruntime_params保存
 bool ClaimLatestPending(){
    string cur=Symbol();
    string body="{\"account_id\":\""+ACCOUNT_ID+"\",\"symbol\":\""+cur+"\"}";
@@ -420,14 +453,15 @@ bool ClaimLatestPending(){
    RtSide        =JsonGetStr(resp,"side","BUY");
    RtSLPrice     =JsonGetNum(resp,"sl_price",0.0);
    RtTPPrice     =JsonGetNum(resp,"tp_price",0.0);
-   RtUseRiskLot  =JsonGetBool(resp,"use_risk_lot",true);
-   RtRiskPercent =JsonGetNum(resp,"risk_percent",2.0);
-   RtLotsFixed   =JsonGetNum(resp,"lots_fixed",0.10);
-   RtMaxLotCap   =JsonGetNum(resp,"max_lot_cap",10.0);
-   RtSlippage    =(int)JsonGetNum(resp,"slippage",3);
-   RtTolPricePips=JsonGetNum(resp,"tol_price_pips",2.5);
-   RtCooldownSec =(int)JsonGetNum(resp,"cooldown_sec",8);
-   RtPlannedSlots=(int)JsonGetNum(resp,"planned_slots",6); // API側が返せるなら利用
+
+   // 追加: フラット化されたruntime_paramsの候補を読む（RESUME時のみ入っている想定）
+   int    planned_from_api = (int)JsonGetNum(resp,"planned_slots",-1);
+   if(planned_from_api>0) RtPlannedSlots=planned_from_api;
+   int    slip_from_api = (int)JsonGetNum(resp,"slippage",-1); if(slip_from_api>=0) RtSlippage=slip_from_api;
+   double tol_from_api  = JsonGetNum(resp,"tol_price_pips",-1); if(tol_from_api>0) RtTolPricePips=tol_from_api;
+   int    cd_from_api   = (int)JsonGetNum(resp,"cooldown_sec",-1); if(cd_from_api>0) RtCooldownSec=cd_from_api;
+   double mlc_from_api  = JsonGetNum(resp,"max_lot_cap",-1); if(mlc_from_api>0) RtMaxLotCap=mlc_from_api;
+   double joblot_from_api = JsonGetNum(resp,"job_lot",-1.0);
 
    // --- Tick準備チェック（ここで失敗ならアボート）
    if(!EnsureTickReady(JobSymbol, TICK_RETRIES, TICK_WAIT_MS)){
@@ -441,12 +475,29 @@ bool ClaimLatestPending(){
       Print(msg); ReportError(msg); JobId=-1; JobStatus=""; IsActive=false; return false;
    }
 
+   // サーバはRUNNINGを返す想定。RESUME由来かどうかは job_lot 有無で判定
+   bool is_resume = (joblot_from_api>0);
+
+   if(is_resume){
+      // === RESUME: サーバ保存のランタイムをそのまま採用
+      RtUseRiskLot=false;
+      RtJobLot = NormalizeLotToBroker(joblot_from_api);
+      IsActive=(JobId>0 && JobStatus=="RUNNING");
+      if(IsActive){
+         Print(StringFormat("CLAIMED(RESUME) job=%d sym=%s magic=%d lot=%.2f planned=%d",
+               JobId, JobSymbol, RtMagic, RtJobLot, RtPlannedSlots));
+         PausedBoundary=false; _sendFailCount=0; NotifyStart();
+      }
+      return IsActive;
+   }
+
+   // === PENDING: 従来計算→cap→PATCHでruntime_params保存
+   RtUseRiskLot=true;
    IsActive=(JobId>0 && JobStatus=="RUNNING");
    if(IsActive){
-      Print("CLAIMED job id=",JobId," magic=",RtMagic," side=",RtSide," symbol=",JobSymbol," status=",JobStatus);
+      Print("CLAIMED(PENDING) job id=",JobId," magic=",RtMagic," side=",RtSide," symbol=",JobSymbol," status=",JobStatus);
       PausedBoundary=false; _sendFailCount=0; NotifyStart();
 
-      // === Job確定時に "一度だけ" ロット算出・固定 ==================
       double lot_base = CalcRiskLotCore();
       if(lot_base<=0){
          ReportError("risk-lot<=0 at claim. abort.");
@@ -457,11 +508,16 @@ bool ClaimLatestPending(){
          ReportError("job-lot<=0 at claim. abort.");
          IsActive=false; JobId=-1; JobStatus=""; return false;
       }
+
+      // PATCH保存
+      SaveRuntimeParams();
+
       Print(StringFormat("[JOBLOT] job=%d sym=%s magic=%d planned=%d lot=%.2f",
             JobId, JobSymbol, RtMagic, RtPlannedSlots, RtJobLot));
    }
    return IsActive;
 }
+
 bool FetchJobStatus(){
    if(JobId<=0) return false;
    string resp; if(!HttpGET(StringFormat("/phantom-jobs/%d/",JobId),resp)) return false;
@@ -668,10 +724,11 @@ int start(){
    return 0;
 }
 
+// OnDeinit: 全決済しない（保持がデフォルト）
 void OnDeinit(const int reason){
    if(IsActive){
-      CancelAllPendingsAndCloseAllByMagic();
-      NotifyEnd("deinit");
+      // 状態保持のためクローズしない。通知のみ（任意）。
+      NotifyEnd("deinit-keep");
    }
 }
 //+------------------------------------------------------------------+
