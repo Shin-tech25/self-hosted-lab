@@ -525,8 +525,11 @@ bool ClaimLatestPending(){
 
       IsActive = (JobId>0); // すでにRUNNING化済み
       if(IsActive){
-         Print(StringFormat("RESUMED job=%d sym=%s magic=%d lot=%.2f planned=%d",
-               JobId, JobSymbol, RtMagic, RtJobLot, RtPlannedSlots));
+         Print(StringFormat(
+            "RESUME ADOPTED: id=%d sym=%s side=%s SL=%G TP=%G lot=%.2f planned=%d slip=%d tol_pips=%G cooldown=%d maxcap=%G magic=%d",
+            JobId, JobSymbol, RtSide, RtSLPrice, RtTPPrice, RtJobLot, RtPlannedSlots,
+             RtSlippage, RtTolPricePips, RtCooldownSec, RtMaxLotCap, RtMagic
+         ));
          PausedBoundary=false; _sendFailCount=0; NotifyStart();
       }
       return IsActive;
