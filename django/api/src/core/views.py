@@ -20,6 +20,7 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 from django.db import transaction
+from django.db.models import Case, When, IntegerField
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 
@@ -512,9 +513,9 @@ class PhantomJobViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="claim")
     def claim(self, request):
         """
-        直近5件のPENDINGから、(account_id, symbol) 一致の最も古い1件を RUNNING にして返す
-        body: {"account_id":"MT5-xxxx", "symbol":"EURUSD"}  # symbolはEA側が自チャートを必ず渡す
-        戻り: 200 OK + job / 204 No Content（該当なし）
+        PENDING or RESUME を対象に 1件だけ RUNNING にして返す（ACK不要）
+        body: {"account_id":"MT5-xxxx", "symbol":"EURUSD"}  # symbol必須
+        戻り: 200 OK + job（RESUME時は runtime_params をフラット展開 + ネスト同梱）/ 204 No Content
         """
         account_id = request.data.get("account_id")
         symbol     = request.data.get("symbol")
@@ -522,56 +523,107 @@ class PhantomJobViewSet(viewsets.ModelViewSet):
         if not account_id:
             return Response({"detail": "account_id required"}, status=status.HTTP_400_BAD_REQUEST)
         if not symbol:
-            # 今後の運用では必須。互換のため警告返すこともできるが、ここでは400にする方が安全。
             return Response({"detail": "symbol required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 口座ID文字列 -> Account（FK）解決
         account = get_object_or_404(Account.objects.filter(is_active=True), account_id=account_id)
-        if not account:
-            return Response({"detail": f"account not found: {account_id}"}, status=status.HTTP_404_NOT_FOUND)
 
         with transaction.atomic():
-            # 直近5件をロックしてからsymbol一致を最古で選択
-            base_qs = (
+            qs = (
                 PhantomJob.objects
                 .select_for_update(skip_locked=True)
-                .filter(status=PhantomJob.Status.PENDING, account=account)
-                .order_by("-created_at")[:5]
+                .filter(
+                    account=account,
+                    symbol=symbol,
+                    status__in=[PhantomJob.Status.RESUME, PhantomJob.Status.PENDING],
+                )
+                .annotate(
+                    status_pri=Case(
+                        When(status=PhantomJob.Status.RESUME, then=0),
+                        When(status=PhantomJob.Status.PENDING, then=1),
+                        default=2,
+                        output_field=IntegerField(),
+                    )
+                )
+                .order_by("status_pri", "created_at")
             )
-            # slice 後の追加フィルタのため list 化
-            candidates = [j for j in base_qs if j.symbol == symbol]
-            candidates.sort(key=lambda j: j.created_at)
 
-            job = candidates[0] if candidates else None
+            job = qs.first()
             if not job:
-                return Response({"detail": "no_pending_job"}, status=status.HTTP_204_NO_CONTENT)
+                return Response(status=status.HTTP_204_NO_CONTENT)
 
+            prev_status = job.status
+
+            # RUNNING へ（ACK不要）
             job.status = PhantomJob.Status.RUNNING
-            job.started_at = timezone.now()
-            job.save()
 
-        return Response(self.get_serializer(job).data, status=status.HTTP_200_OK)
+            update_fields = ["status"]
+            # PENDING -> RUNNING の時だけ started_at をセット（初回開始時刻保持）
+            if prev_status == PhantomJob.Status.PENDING and not getattr(job, "started_at", None):
+                job.started_at = timezone.now()
+                update_fields.append("started_at")
 
-    @action(detail=True, methods=["post", "patch"], url_path="complete")
-    def complete(self, request, pk=None):
-        job = self.get_object()
-        if job.status != PhantomJob.Status.RUNNING:
-            return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
-        job.status = PhantomJob.Status.COMPLETED
-        job.finished_at = timezone.now()
-        job.save()
-        return Response({"ok": True}, status=status.HTTP_200_OK)
+            job.save(update_fields=update_fields)
 
-    @action(detail=True, methods=["post", "patch"], url_path="error")
-    def error(self, request, pk=None):
-        job = self.get_object()
-        if job.status not in (PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING):
-            return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
-        job.status       = PhantomJob.Status.ERROR
-        job.error_detail = request.data.get("error_detail") or job.error_detail
-        job.failed_at    = timezone.now()
-        job.save()
-        return Response({"ok": True}, status=status.HTTP_200_OK)
+        # 標準シリアライズ
+        data = self.get_serializer(job).data
+
+        # RESUME の場合は runtime_params をフラット展開して応答にマージ
+        # ★ 空dictでも「存在」はTrueにしたいので None 判定を採用
+        has_runtime_params = (getattr(job, "runtime_params", None) is not None)
+        if prev_status == PhantomJob.Status.RESUME and has_runtime_params:
+            rp = job.runtime_params or {}
+            # EAが欲しいキーだけを安全に絞ってマージ（必要に応じて拡張）
+            allow = {
+                "planned_slots", "job_lot", "slippage",
+                "tol_price_pips", "cooldown_sec", "max_lot_cap",
+                "side", "sl_price", "tp_price", "symbol",
+            }
+            for k in allow:
+                if k in rp:
+                    data[k] = rp[k]
+
+        # ★ RESUME の場合は、ネストの runtime_params もそのまま同梱（GET不要でも拾えるように）
+        if prev_status == PhantomJob.Status.RESUME:
+            data["runtime_params"] = job.runtime_params or {}
+
+        # EA が分岐しやすい補助フィールドを追加
+        data.update({
+            "prev_status": prev_status,
+            "resumed": (prev_status == PhantomJob.Status.RESUME),
+            "has_runtime_params": has_runtime_params,
+        })
+
+        return Response(data, status=status.HTTP_200_OK)
+        
+        @action(detail=True, methods=["post"], url_path="runtime-params")
+        def set_runtime_params(self, request, pk=None):
+            job = self.get_object()
+            # 空JSON {} も許容
+            params = request.data if isinstance(request.data, dict) else {}
+            job.runtime_params = params
+            job.save(update_fields=["runtime_params"])
+            return Response({"ok": True}, status=status.HTTP_200_OK)
+
+        @action(detail=True, methods=["post", "patch"], url_path="complete")
+        def complete(self, request, pk=None):
+            job = self.get_object()
+            if job.status != PhantomJob.Status.RUNNING:
+                return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
+            job.status = PhantomJob.Status.COMPLETED
+            job.finished_at = timezone.now()
+            job.save(update_fields=["status", "finished_at"])
+            return Response({"ok": True}, status=status.HTTP_200_OK)
+
+        @action(detail=True, methods=["post", "patch"], url_path="error")
+        def error(self, request, pk=None):
+            job = self.get_object()
+            if job.status not in (PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.RESUME):
+                return Response({"detail": "invalid_state"}, status=status.HTTP_409_CONFLICT)
+            job.status       = PhantomJob.Status.ERROR
+            job.error_detail = request.data.get("error_detail") or job.error_detail
+            job.failed_at    = timezone.now()
+            job.save(update_fields=["status", "error_detail", "failed_at"])
+            return Response({"ok": True}, status=status.HTTP_200_OK)
 
 class QuickOrderForm(forms.Form):
     account = forms.ModelChoiceField(label="Account", queryset=Account.objects.all().order_by("account_id"))

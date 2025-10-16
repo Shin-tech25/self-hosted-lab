@@ -180,6 +180,7 @@ class PhantomJob(models.Model):
         PENDING   = "PENDING"
         RUNNING   = "RUNNING"
         COMPLETED = "COMPLETED"
+        RESUME = "RESUME"
         ERROR     = "ERROR"
     
     # (2) 1H 20EMA or 80EMA ターゲット
@@ -262,6 +263,8 @@ class PhantomJob(models.Model):
     # (6) 任意のメモ
     note = models.TextField(null=True, blank=True, help_text="Optional note")
 
+    runtime_params = models.JSONField(default=dict, blank=True, null=True, help_text="Runtime parameters (for Expert Advisor)")
+
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 
@@ -325,9 +328,10 @@ class PhantomJob(models.Model):
 
         allowed = {
             PhantomJob.Status.PENDING:   {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.COMPLETED, PhantomJob.Status.ERROR},
-            PhantomJob.Status.RUNNING:   {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.COMPLETED, PhantomJob.Status.ERROR},
+            PhantomJob.Status.RUNNING:   {PhantomJob.Status.PENDING, PhantomJob.Status.RUNNING, PhantomJob.Status.RESUME, PhantomJob.Status.COMPLETED, PhantomJob.Status.ERROR},
+            PhantomJob.Status.RESUME:    {PhantomJob.Status.RUNNING, PhantomJob.Status.ERROR},
             PhantomJob.Status.COMPLETED: {PhantomJob.Status.PENDING, PhantomJob.Status.COMPLETED},
-            PhantomJob.Status.ERROR:     {PhantomJob.Status.PENDING, PhantomJob.Status.ERROR},
+            PhantomJob.Status.ERROR:     {PhantomJob.Status.PENDING, PhantomJob.Status.RESUME, PhantomJob.Status.ERROR},
         }
         if new not in allowed[prev]:
             raise ValidationError({"status": f"The transition from {prev} to {new} is not allowed."})

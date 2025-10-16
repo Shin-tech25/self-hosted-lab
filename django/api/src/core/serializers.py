@@ -133,7 +133,10 @@ class PhantomJobSerializer(serializers.ModelSerializer):
     # 読み出し：account の account_id と name を付加
     account      = serializers.SlugRelatedField(read_only=True, slug_field="account_id")
     account_name = serializers.CharField(source="account.name", read_only=True)
-    side = serializers.ChoiceField(choices=PhantomJob.Side.choices)
+    side         = serializers.ChoiceField(choices=PhantomJob.Side.choices)
+
+    # ★ 追加: runtime_params を常に返せるように（None は {} へ）
+    runtime_params = serializers.JSONField(required=False, allow_null=True)
 
     class Meta:
         model  = PhantomJob
@@ -150,6 +153,7 @@ class PhantomJobSerializer(serializers.ModelSerializer):
             "magic",
             "created_at", "updated_at", "started_at", "finished_at",
             "error_detail", "failed_at",
+            "runtime_params",
         ]
         read_only_fields = [
             "id",
@@ -157,6 +161,13 @@ class PhantomJobSerializer(serializers.ModelSerializer):
             "magic",
             "created_at", "updated_at", "started_at", "finished_at", "failed_at",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # None / "null" / 空 は {} に正規化（EA の JsonExtractObject 対策）
+        if data.get("runtime_params") in (None, "", "null"):
+            data["runtime_params"] = {}
+        return data
 
     def create(self, validated):
         acc_id = validated.pop("account_id", None)
@@ -170,3 +181,4 @@ class PhantomJobSerializer(serializers.ModelSerializer):
         if acc_id is not None:
             instance.account = _resolve_active_account(acc_id)
         return super().update(instance, validated)
+
