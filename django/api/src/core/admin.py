@@ -180,11 +180,12 @@ class OpenPositionAdmin(admin.ModelAdmin):
 class PhantomJobAdmin(admin.ModelAdmin):
     list_display = (
         "id", "status", "account_id", "symbol", "side", "sl_price", "tp_price",
-        "use_risk_lot", "risk_percent", "lots_fixed", "max_lot_cap",
-        "slippage", "tol_price_pips", "cooldown_sec",
+        "risk_percent", "display_path_analysis",
+        # "lots_fixed", "max_lot_cap", "use_risk_lot",
+        # "slippage", "tol_price_pips", "cooldown_sec",
         "magic", "queue_date", "queue_time_display", "started_at", "finished_at",
         "error_detail", "failed_at", "scenario_url", "target_ema", "total_pnl",
-        "created_at",
+        # "created_at",
     )
     list_filter = (
         ("finished_at", DateTimeRangeFilter),
@@ -203,3 +204,25 @@ class PhantomJobAdmin(admin.ModelAdmin):
         m = obj.queue_minutes or 0
         return f"{m//60:02d}:{m%60:02d} JST"
     queue_time_display.short_description = "Queued (JST)"
+
+    def display_path_analysis(self, obj):
+        """
+        path_analysis（リスト or None）を文字列化して表示する
+        例: ["Q1", "Mid", "Q3", "TP"] -> "Q1-Mid-Q3-TP"
+        """
+        if not obj.path_analysis:
+            return "-"
+        # JSONFieldの中身が文字列の場合は一度eval/json.loadsしてもOK
+        if isinstance(obj.path_analysis, str):
+            try:
+                import json
+                arr = json.loads(obj.path_analysis)
+            except Exception:
+                return obj.path_analysis
+        else:
+            arr = obj.path_analysis
+        if isinstance(arr, list):
+            return "-".join(arr)
+        return str(arr)
+
+    display_path_analysis.short_description = "Path Analysis"
