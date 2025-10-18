@@ -46,10 +46,8 @@
       font-size: var(--fs-body);
     }
 
-    /* PCでもスマホでも全幅を使えるように */
     .wrap{max-width: clamp(720px, 88vw, 980px); margin: 0 auto;}
 
-    /* ---------------- Flash messages ---------------- */
     .msgs{margin:0 0 16px}
     .msg{
       border-radius:12px; padding:12px 14px; margin:10px 0;
@@ -60,7 +58,6 @@
     .msg.ok{ border-color: rgba(22,163,74,.35); background: #f0fdf4; }
     .msg.ng{ border-color: rgba(239,68,68,.35); background: #fef2f2; }
 
-    /* ---------------- Card & headings ---------------- */
     .card{
       background: var(--card);
       border: 1px solid var(--line);
@@ -81,7 +78,7 @@
       display:flex; gap:12px; align-items:flex-start;
       padding:14px 16px; margin:0 0 16px;
       background: linear-gradient(180deg,#f8fafc,#f9fafb);
-      border:1px solid #e5e7eb;          /* 実線に変更 */
+      border:1px solid #e5e7eb;
       border-radius:12px;
       color:#334155; font-size:14px; line-height:1.6;
       box-shadow: 0 2px 6px rgba(15,23,42,.04);
@@ -94,14 +91,52 @@
     }
     .mindset strong{ color:#0f172a; }
 
-    /* ---------------- Form fields ---------------- */
+    /* ---------------- Trade Hints ---------------- */
+    .hints-card{
+      margin: 16px 0 22px;
+      padding: 14px 16px;
+      background: linear-gradient(180deg,#f9fafb,#ffffff);
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow: 0 2px 6px rgba(15,23,42,.04);
+      color:#374151; font-size:14px;
+    }
+    .hints-head{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom:8px;
+    }
+    .hints-title{ font-weight:700; font-size:15px; color:#111827; display:flex; align-items:center; gap:8px;}
+    .hints-actions{ display:flex; gap:8px; }
+    .btn{
+      padding:8px 10px; font-size:12.5px; border:1px solid var(--line); border-radius:10px;
+      background: #fff; color:#1f2937; cursor:pointer;
+      transition: all .2s ease;
+    }
+    .btn:hover{ border-color: rgba(59,130,246,.35); color: var(--primary); box-shadow: 0 3px 10px rgba(59,130,246,.12);}
+    .btn[aria-pressed="true"]{ background:#eef2ff; color:#1d4ed8; border-color:#c7d2fe; }
+
+    .hints-collapse{ cursor:pointer; user-select:none; }
+    .hints-list{ margin: 8px 0 0; padding:0 0 0 18px; }
+    .hints-list li{ margin: 6px 0; }
+    .hint-tag{
+      display:inline-block; margin-left:6px; padding:1px 8px; font-size:11px; border-radius:999px;
+      background:#eef2ff; color:#1d4ed8;
+    }
+
+    /* editor */
+    .hints-editor{ margin-top:10px; display:none; }
+    .hints-editor textarea{
+      width:100%; box-sizing:border-box; min-height:120px;
+      padding:10px 12px; border:1px solid var(--line); border-radius:10px; font-size:13.5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    }
+    .hints-empty{ color:#6b7280; font-size:13px; margin-top:6px; }
+    .hints-footer{ margin-top:8px; display:flex; gap:8px; justify-content:flex-end; }
+
+    /* ---------------- Form etc.（既存） ---------------- */
     form{ margin-top:8px; }
     .field{ margin: 14px 0; }
-
-    label{
-      display:block; font-size:var(--fs-label); color: #374151;
-      margin: 0 0 6px; font-weight:600;
-    }
+    label{ display:block; font-size:var(--fs-label); color: #374151; margin:0 0 6px; font-weight:600; }
 
     select,
     input[type="text"],
@@ -109,302 +144,125 @@
     input[type="tel"],
     input[type="email"],
     input[type="password"]{
-      width:100%;
-      box-sizing:border-box;
-      display:block;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:#fff;
-      color: var(--text);
-      font-size:16px;
+      width:100%; box-sizing:border-box; display:block;
+      padding:12px 14px; border-radius:12px; border:1px solid var(--line);
+      background:#fff; color: var(--text); font-size:16px;
       transition: border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .04s ease;
-      outline: none;
-      appearance:none;
-      -webkit-appearance:none;
+      outline: none; appearance:none; -webkit-appearance:none;
     }
-    input[type="url"] {
-      width:100%;
-      box-sizing:border-box;
-      display:block;
-      padding:12px 14px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      background:#fff;
-      color: var(--text);
-      font-size:16px;
-      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .04s ease;
-      outline: none;
-      appearance:none;
-      -webkit-appearance:none;
-    }
-    select:hover,
-    input:hover{ border-color:#cfd8e3; }
-    select:focus,
-    input:focus{
-      border-color: var(--primary);
-      box-shadow: var(--ring);
-      background:#fff;
-    }
+    input[type="url"]{ width:100%; box-sizing:border-box; display:block; padding:12px 14px; border-radius:12px; border:1px solid var(--line); background:#fff; color:var(--text); font-size:16px; transition:border-color .15s ease, box-shadow .15s ease, background .15s ease, transform .04s ease; outline:none; appearance:none; -webkit-appearance:none; }
+    select:hover, input:hover{ border-color:#cfd8e3; }
+    select:focus, input:focus{ border-color: var(--primary); box-shadow: var(--ring); background:#fff; }
 
-    /* ================================================================
-      Animated Submit Button
-    ================================================================= */
     .submit{
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px 16px;
-      margin-top: 18px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 16px;
-      letter-spacing: .02em;
-      color: #fff;
+      width:100%; box-sizing:border-box; padding:14px 16px; margin-top:18px; border-radius:12px; border:none; cursor:pointer;
+      font-weight:700; font-size:16px; letter-spacing:.02em; color:#fff;
       background-image: linear-gradient(to right, #009245, #FCEE21, #00A8C5, #D9E021);
-      background-size: 300% 100%;
-      transition: background-position .4s ease-in-out,
-                  box-shadow .25s ease,
-                  transform .06s ease,
-                  filter .25s ease;
-      box-shadow: 0 10px 20px rgba(2,6,23,.08),
-                  0 2px 8px rgba(2,6,23,.06);
+      background-size:300% 100%;
+      transition: background-position .4s ease-in-out, box-shadow .25s ease, transform .06s ease, filter .25s ease;
+      box-shadow: 0 10px 20px rgba(2,6,23,.08), 0 2px 8px rgba(2,6,23,.06);
     }
-    .submit:hover{ background-position: 100% 0; }
+    .submit:hover{ background-position:100% 0; }
     .submit:active{ transform: translateY(1px); filter: brightness(.98); }
-    .submit:focus-visible{
-      outline: none;
-      box-shadow:
-        0 0 0 4px rgba(59,130,246,.18),
-        0 10px 20px rgba(2,6,23,.08),
-        0 2px 8px rgba(2,6,23,.06);
-    }
-    .submit[disabled]{
-      opacity:.6; cursor: not-allowed;
-      background-image: linear-gradient(180deg,#e5e7eb,#d1d5db);
-      background-size: 100% 100%; box-shadow: none;
-    }
+    .submit:focus-visible{ outline:none; box-shadow: 0 0 0 4px rgba(59,130,246,.18), 0 10px 20px rgba(2,6,23,.08), 0 2px 8px rgba(2,6,23,.06); }
+    .submit[disabled]{ opacity:.6; cursor:not-allowed; background-image: linear-gradient(180deg,#e5e7eb,#d1d5db); background-size:100% 100%; box-shadow:none; }
     .submit span{ display:inline-block; transition: transform .2s ease; }
     .submit:hover span{ transform: translateY(-1px); }
-    @media (prefers-reduced-motion: reduce){
-      .submit, .submit span{ transition: none !important; }
-    }
+    @media (prefers-reduced-motion: reduce){ .submit, .submit span{ transition:none !important; } }
 
-    /* ---------------- Note under button ---------------- */
-    .note{
-      margin-top:10px; color: var(--muted); font-size:var(--fs-small); line-height:1.6;
-      text-align:center;
-    }
+    .note{ margin-top:10px; color:var(--muted); font-size:var(--fs-small); line-height:1.6; text-align:center; }
 
-    /* ---------------- Latest Job Card ---------------- */
-    .latest-job {
-      margin: 16px 0 22px;
-      padding: 14px 16px;
-      background: linear-gradient(180deg,#f9fafb,#ffffff);
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(15,23,42,.04);
-      font-size: 14px;
-      color: #374151;
-    }
-    .latest-title {
-      font-weight: 700;
-      margin-bottom: 8px;
-      font-size: 15px;
-      color: #111827;
-    }
-    .latest-table { width: 100%; border-collapse: collapse; }
-    .latest-table th {
-      text-align: left;
-      padding: 6px 8px;
-      width: 100px;
-      color: #6b7280;
-      font-weight: 600;
-    }
-    .latest-table td { padding: 6px 8px; color: #1f2937; }
+    .latest-job{ margin:16px 0 22px; padding:14px 16px; background:linear-gradient(180deg,#f9fafb,#ffffff); border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 2px 6px rgba(15,23,42,.04); font-size:14px; color:#374151; }
+    .latest-title{ font-weight:700; margin-bottom:8px; font-size:15px; color:#111827; }
+    .latest-table { width:100%; border-collapse: collapse; }
+    .latest-table th{ text-align:left; padding:6px 8px; width:100px; color:#6b7280; font-weight:600; }
+    .latest-table td{ padding:6px 8px; color:#1f2937; }
 
-    /* ---------------- Status dots ---------------- */
-    .status-icon {
-      display: inline-block;
-      width: 10px; height: 10px;
-      border-radius: 50%;
-      margin-right: 8px; vertical-align: middle;
-      box-shadow: 0 0 0 2px rgba(0,0,0,.05) inset;
-    }
-    .status-dot {
-      display: inline-block;
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      margin-right: 10px; vertical-align: -2px;
-      box-shadow: 0 0 0 3px rgba(0,0,0,.05) inset;
-    }
+    .status-icon, .status-dot{ display:inline-block; border-radius:50%; margin-right:8px; vertical-align:middle; box-shadow:0 0 0 2px rgba(0,0,0,.05) inset; }
+    .status-icon{ width:10px; height:10px; }
+    .status-dot{ width:14px; height:14px; margin-right:10px; vertical-align:-2px; box-shadow:0 0 0 3px rgba(0,0,0,.05) inset; }
+    .status-icon.pending,.status-icon.running,.status-dot.pending,.status-dot.running{ background-color:#16a34a; box-shadow:0 0 0 2px rgba(22,163,74,.25); }
+    .status-icon.completed,.status-dot.completed{ background-color:#9ca3af; box-shadow:0 0 0 2px rgba(156,163,175,.25); }
+    .status-icon.error,.status-dot.error{ background-color:#ef4444; box-shadow:0 0 0 2px rgba(239,68,68,.25); }
 
-    /* state colors */
-    .status-icon.pending,
-    .status-icon.running,
-    .status-dot.pending,
-    .status-dot.running {
-      background-color: #16a34a;
-      box-shadow: 0 0 0 2px rgba(22,163,74,.25);
-    }
-    .status-icon.completed,
-    .status-dot.completed {
-      background-color: #9ca3af;
-      box-shadow: 0 0 0 2px rgba(156,163,175,.25);
-    }
-    .status-icon.error,
-    .status-dot.error {
-      background-color: #ef4444;
-      box-shadow: 0 0 0 2px rgba(239,68,68,.25);
-    }
-
-    /* ---------------- Admin button ---------------- */
     .admin-link { margin-top: 28px; text-align: center; }
     .btn-admin{
-      display: inline-block; position: relative;
-      padding: 12px 28px;
-      font-weight: 600; font-size: 15px;
-      color: var(--primary-600);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: linear-gradient(180deg, #fff, #f9fafb);
-      text-decoration: none;
-      transition: all .25s ease;
-      overflow: hidden; isolation: isolate;
+      display:inline-block; position:relative; padding:12px 28px; font-weight:600; font-size:15px; color:var(--primary-600);
+      border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg, #fff, #f9fafb);
+      text-decoration:none; transition:all .25s ease; overflow:hidden; isolation:isolate;
     }
-    .btn-admin::before{
-      content: ''; position: absolute; inset: 0;
-      background: radial-gradient(100% 150% at 50% -20%, rgba(59,130,246,.12), transparent 70%);
-      opacity: 0; transform: scale(.9);
-      transition: opacity .25s ease, transform .25s ease;
-      z-index: 1;
-    }
-    .btn-admin:hover::before{ opacity: 1; transform: scale(1); }
-    .btn-admin:hover{
-      color: var(--primary);
-      border-color: rgba(59,130,246,.25);
-      box-shadow: 0 6px 16px rgba(59,130,246,.15);
-      transform: translateY(-1px);
-    }
-    .btn-admin:active{ transform: translateY(1px); box-shadow: none; }
+    .btn-admin::before{ content:''; position:absolute; inset:0; background:radial-gradient(100% 150% at 50% -20%, rgba(59,130,246,.12), transparent 70%); opacity:0; transform:scale(.9); transition:opacity .25s ease, transform .25s ease; z-index:1; }
+    .btn-admin:hover::before{ opacity:1; transform:scale(1); }
+    .btn-admin:hover{ color:var(--primary); border-color:rgba(59,130,246,.25); box-shadow:0 6px 16px rgba(59,130,246,.15); transform:translateY(-1px); }
+    .btn-admin:active{ transform:translateY(1px); box-shadow:none; }
 
-    .checklist{
-      margin: 18px 0 6px; padding: 14px 16px;
-      background: linear-gradient(180deg,#f9fafb,#ffffff);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-    }
-    .checklist h3{
-      margin: 0 0 10px; font-size: 15px; font-weight: 700; color:#111827;
-    }
-    .checkrow{
-      display:flex; gap:10px; align-items:flex-start;
-      padding:8px 0; border-top:1px dashed #e5e7eb;
-    }
-    .checkrow:first-of-type{ border-top: none; }
+    .checklist{ margin:18px 0 6px; padding:14px 16px; background:linear-gradient(180deg,#f9fafb,#ffffff); border:1px solid var(--line); border-radius:12px; }
+    .checklist h3{ margin:0 0 10px; font-size:15px; font-weight:700; color:#111827; }
+    .checkrow{ display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px dashed #e5e7eb; }
+    .checkrow:first-of-type{ border-top:none; }
     .checkrow input[type="checkbox"]{ margin-top:2px; transform: translateY(1px); }
     .checkrow label{ margin:0; font-size:14px; font-weight:600; color:#374151; }
     .check-help{ margin:4px 0 0 26px; font-size:12px; color:#6b7280; }
 
-    /* ---------------- Errors ---------------- */
-    .err{
-      margin:8px 0 0;
-      color:#991b1b;
-      background:#fef2f2;
-      border:1px solid #fecaca;
-      padding:10px 12px;
-      border-radius:10px;
-      font-size:14px; line-height:1.5;
-    }
-    .field.has-error input,
-    .field.has-error select{
-      border-color:#ef4444;
-      box-shadow:0 0 0 4px rgba(239,68,68,.15);
-      background:#fff;
-    }
+    .err{ margin:8px 0 0; color:#991b1b; background:#fef2f2; border:1px solid #fecaca; padding:10px 12px; border-radius:10px; font-size:14px; line-height:1.5; }
+    .field.has-error input,.field.has-error select{ border-color:#ef4444; box-shadow:0 0 0 4px rgba(239,68,68,.15); background:#fff; }
 
-    /* ===== Data grids ===== */
-    .grid-card{
-      margin: 16px 0 22px; padding: 14px 16px;
-      background: linear-gradient(180deg,#f9fafb,#ffffff);
-      border:1px solid #e5e7eb; border-radius:12px;
-      box-shadow: 0 2px 6px rgba(15,23,42,.04); font-size:14px; color:#374151;
-    }
-    .grid-title{
-      font-weight:700; margin-bottom:8px; font-size:15px; color:#111827;
-      display:flex; align-items:center; gap:10px;
-    }
+    .grid-card{ margin:16px 0 22px; padding:14px 16px; background:linear-gradient(180deg,#f9fafb,#ffffff); border:1px solid #e5e7eb; border-radius:12px; box-shadow:0 2px 6px rgba(15,23,42,.04); font-size:14px; color:#374151; }
+    .grid-title{ font-weight:700; margin-bottom:8px; font-size:15px; color:#111827; display:flex; align-items:center; gap:10px; }
     .badge{ display:inline-block; padding:2px 8px; font-size:12px; border-radius:999px; background:#eef2ff; color:#1d4ed8; }
 
-    /* 横スクロールはPC/スマホ共通で有効に */
-    .table-wrap{
-      width: 100%;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: inset -6px 0 6px -6px rgba(0,0,0,.06);
+    .table-wrap{ width:100%; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; border:1px solid var(--line); border-radius:10px; background:#fff; box-shadow: inset -6px 0 6px -6px rgba(0,0,0,.06); }
+    .table{ width:100%; border-collapse:collapse; min-width:1000px; }
+    .table th{ text-align:left; padding:6px 8px; color:#6b7280; font-weight:600; border-bottom:1px dashed #e5e7eb; white-space:nowrap; }
+    .table td{ padding:6px 8px; color:#1f2937; border-bottom:1px dashed #e5e7eb; white-space:nowrap; }
+    .table tr:last-child td{ border-bottom:none; }
+    .nowrap{ white-space:nowrap; }
+
+    /* ---------------- Note icon ---------------- */
+    .note-icon {
+      display:inline-block;
+      width:16px;
+      height:16px;
+      border:1.8px solid #2563eb;
+      border-radius:3px;
+      position:relative;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(0,0,0,.08);
+    }
+    .note-icon::before {
+      content:"";
+      position:absolute;
+      left:3px;
+      top:4px;
+      width:9px;
+      height:2px;
+      background:#2563eb;
+      border-radius:1px;
+      box-shadow:
+        0 3px 0 0 #2563eb,
+        0 6px 0 0 #2563eb;
     }
 
-    .table { width:100%; border-collapse: collapse; min-width: 1000px; }
-    .table th{ text-align:left; padding:6px 8px; color:#6b7280; font-weight:600; border-bottom:1px dashed #e5e7eb; white-space: nowrap; }
-    .table td{ padding:6px 8px; color:#1f2937; border-bottom:1px dashed #e5e7eb; white-space: nowrap; }
-    .table tr:last-child td{ border-bottom:none; }
-    .nowrap{ white-space: nowrap; }
 
-    /* ---------------- Print ---------------- */
     @media print {
       @page { size: A4 portrait; margin: 12mm; }
       .no-print { display: none !important; }
     }
-
-    /* ---------------- Mobile tweaks ---------------- */
     @media (max-width: 480px){
       body{ padding:16px; }
       h2{ font-size:18px; }
       .sub{ font-size: 11.5px; }
       .grid-title{ font-size:14px; }
       .badge{ font-size:11px; }
-
-      /* スマホで不要列を隠す */
       .sm-hide{ display:none; }
-
-      /* === 以下 改良版：Opened列の見た目＆余白圧縮 === */
       .card{ padding:16px; }
-      .latest-job, .grid-card, .checklist{ padding:10px 12px; }
-
-      .table-wrap{
-        border-radius:8px;
-        box-shadow:none;
-      }
-      .table{
-        min-width:680px; /* 横スライド量削減 */
-      }
-      .table th,
-      .table td{
-        padding:4px 6px;
-        font-size:12.5px;
-      }
-      .table .nowrap{
-        font-size:12px;
-        letter-spacing:.01em;
-      }
-      .table thead th:last-child,
-      .table tbody td:last-child{
-        padding-right:4px;
-      }
-      .table th{
-        font-weight:600;
-        font-size:12.5px;
-      }
-      .latest-table th,
-      .latest-table td{
-        padding:4px 6px;
-        font-size:12.5px;
-      }
+      .latest-job, .grid-card, .checklist, .hints-card{ padding:10px 12px; }
+      .table-wrap{ border-radius:8px; box-shadow:none; }
+      .table{ min-width:680px; }
+      .table th,.table td{ padding:4px 6px; font-size:12.5px; }
+      .table .nowrap{ font-size:12px; letter-spacing:.01em; }
+      .table thead th:last-child,.table tbody td:last-child{ padding-right:4px; }
+      .latest-table th,.latest-table td{ padding:4px 6px; font-size:12.5px; }
     }
   </style>
 </head>
@@ -442,6 +300,41 @@
         </div>
       </div>
 
+      <!-- ===== Trade Hints ===== -->
+      <div class="hints-card">
+        <div class="hints-head">
+          <div class="hints-title">
+            <span class="note-icon" aria-hidden="true"></span>
+            Trade Hints
+          </div>
+        </div>
+
+        {% if trade_hints %}
+          <ul class="hints-list">
+            {% for hint in trade_hints %}
+              <li>{{ hint }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="hints-empty">No trade hints defined.</div>
+        {% endif %}
+      </div>
+
+
+        <!-- ローカルエディタ -->
+        <div class="hints-editor no-print" id="hintsEditor">
+          <label for="hintsTextarea" style="display:block; font-size:12px; color:#6b7280; margin:0 0 6px;">
+            1行＝1ヒント（「テキスト | タグ」形式も可。例: 「SLは無効化ポイント | Risk」）
+          </label>
+          <textarea id="hintsTextarea" placeholder="例）&#10;期待値の根拠を事前に言語化する | Mindset&#10;SLは無効化ポイントに置く | Risk&#10;埋め直しはしない、計画通りに | Execution"></textarea>
+          <div class="hints-footer">
+            <button class="btn" type="button" id="btnSave">Save</button>
+            <button class="btn" type="button" id="btnCancel">Cancel</button>
+            <button class="btn" type="button" id="btnClear">Clear</button>
+          </div>
+        </div>
+      </div>
+
       {% if latest_job %}
         <div class="latest-job">
           <div class="latest-title">
@@ -458,7 +351,7 @@
         </div>
       {% endif %}
 
-      <!-- ===== Open Orders (all accounts) ===== -->
+      <!-- ===== Open Orders ===== -->
       <div class="grid-card">
         <div class="grid-title">
           Pending Orders <span class="badge">{{ open_orders|length }}</span>
@@ -507,7 +400,7 @@
         {% endif %}
       </div>
 
-      <!-- ===== Open Positions (all accounts) ===== -->
+      <!-- ===== Open Positions ===== -->
       <div class="grid-card">
         <div class="grid-title">
           Open Positions <span class="badge">{{ open_positions|length }}</span>
@@ -664,7 +557,6 @@
         </p>
       </form>
 
-      <!-- 管理画面ボタン -->
       <div class="admin-link">
         <a href="https://api.mshin0509.com/forex/admin" class="btn-admin" target="_blank" rel="noopener">
           <span>Go to Admin Dashboard</span>
@@ -685,33 +577,143 @@
       checks.forEach(c => c.addEventListener('change', syncSubmitState));
       syncSubmitState();
     })();
-    // ===== Silent auto refresh every 60 seconds =====
-    (function () {
-      const REFRESH_MS = 60_000;
 
-      function reloadWithBust() {
-        // Safari等のキャッシュ対策でタイムスタンプを付ける
-        const url = new URL(window.location.href);
-        url.searchParams.set('_r', Date.now().toString());
-        window.location.replace(url.toString());
+    // ===== Trade Hints（localStorage簡易ノート） =====
+    (function(){
+      const LS_KEY = 'trade_hints_v1';
+      const list     = document.getElementById('hintsList');
+      const empty    = document.getElementById('hintsEmpty');
+      const editor   = document.getElementById('hintsEditor');
+      const ta       = document.getElementById('hintsTextarea');
+      const btnEdit  = document.getElementById('btnEdit');
+      const btnSave  = document.getElementById('btnSave');
+      const btnCancel= document.getElementById('btnCancel');
+      const btnClear = document.getElementById('btnClear');
+      const btnCopy  = document.getElementById('btnCopy');
+      const btnExport= document.getElementById('btnExport');
+      const btnToggle= document.getElementById('btnToggle');
+      const hintsBox = document.getElementById('hints');
+
+      function parseLines(text){
+        // 1行=1ヒント。「text | tag」形式に対応
+        return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+          const m = l.split('|');
+          return { text: (m[0]||'').trim(), tag: (m[1]||'').trim() || null };
+        });
+      }
+      function render(items){
+        if(!list) return;
+        list.innerHTML = '';
+        if(!items || !items.length){
+          if(empty) empty.style.display = '';
+          return;
+        }
+        if(empty) empty.style.display = 'none';
+        for(const it of items){
+          const li = document.createElement('li');
+          li.textContent = it.text || '';
+          if(it.tag){
+            const span = document.createElement('span');
+            span.className = 'hint-tag';
+            span.textContent = it.tag;
+            li.appendChild(span);
+          }
+          list.appendChild(li);
+        }
+      }
+      function load(){
+        try{
+          const raw = localStorage.getItem(LS_KEY);
+          if(!raw) return [];
+          return JSON.parse(raw);
+        }catch(e){ return []; }
+      }
+      function save(items){
+        localStorage.setItem(LS_KEY, JSON.stringify(items||[]));
       }
 
-      function isUserEditing() {
-        const a = document.activeElement;
-        if (!a) return false;
-        const tag = a.tagName;
-        if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return true;
-        return false;
+      // サーバーが提供していない場合のみ、ローカルの既存値を表示
+      if(list && !list.children.length){
+        const items = load();
+        render(items);
       }
 
-      function maybeReload() {
-        // タブが非表示中や編集中はスキップ
-        if (document.visibilityState !== 'visible') return;
-        if (isUserEditing()) return;
-        reloadWithBust();
+      // Editトグル
+      if(btnEdit){
+        btnEdit.addEventListener('click', ()=>{
+          const pressed = btnEdit.getAttribute('aria-pressed') === 'true';
+          if(!pressed){
+            // エディタに現在の内容を流し込む
+            const current = Array.from(list ? list.querySelectorAll('li') : []).map(li=>{
+              const tagEl = li.querySelector('.hint-tag');
+              const text = tagEl ? li.textContent.replace(tagEl.textContent,'').trim() : li.textContent.trim();
+              const tag  = tagEl ? tagEl.textContent.trim() : '';
+              return tag ? `${text} | ${tag}` : text;
+            });
+            ta.value = current.join('\n');
+          }
+          editor.style.display = pressed ? 'none' : 'block';
+          btnEdit.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+        });
       }
-
-      setInterval(maybeReload, REFRESH_MS);
+      if(btnCancel){
+        btnCancel.addEventListener('click', ()=>{
+          editor.style.display = 'none';
+          btnEdit.setAttribute('aria-pressed','false');
+        });
+      }
+      if(btnSave){
+        btnSave.addEventListener('click', ()=>{
+          const items = parseLines(ta.value);
+          render(items);
+          save(items);
+          editor.style.display = 'none';
+          btnEdit.setAttribute('aria-pressed','false');
+        });
+      }
+      if(btnClear){
+        btnClear.addEventListener('click', ()=>{
+          if(confirm('ローカルに保存したヒントをすべて削除します。よろしいですか？')){
+            save([]);
+            render([]);
+            ta.value = '';
+          }
+        });
+      }
+      if(btnCopy){
+        btnCopy.addEventListener('click', async ()=>{
+          const items = Array.from(list ? list.querySelectorAll('li') : []).map(li=>{
+            const tagEl = li.querySelector('.hint-tag');
+            const text = tagEl ? li.textContent.replace(tagEl.textContent,'').trim() : li.textContent.trim();
+            const tag  = tagEl ? tagEl.textContent.trim() : '';
+            return tag ? `${text} | ${tag}` : text;
+          });
+          const txt = items.join('\n');
+          try{ await navigator.clipboard.writeText(txt); btnCopy.textContent='Copied!'; setTimeout(()=>btnCopy.textContent='Copy',1200); }catch(e){}
+        });
+      }
+      if(btnExport){
+        btnExport.addEventListener('click', ()=>{
+          const blob = new Blob([localStorage.getItem(LS_KEY) || '[]'], {type:'application/json'});
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'trade_hints.json';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        });
+      }
+      if(btnToggle && hintsBox){
+        btnToggle.addEventListener('click', ()=>{
+          const listEl = hintsBox.querySelector('.hints-list');
+          const emptyEl= hintsBox.querySelector('.hints-empty');
+          const editorEl=hintsBox.querySelector('.hints-editor');
+          const isHidden = listEl && listEl.style.display==='none';
+          if(listEl) listEl.style.display = isHidden ? '' : 'none';
+          if(emptyEl) emptyEl.style.display = isHidden ? '' : 'none';
+          if(editorEl && editorEl.style.display==='block'){ editorEl.style.display='none'; btnEdit.setAttribute('aria-pressed','false'); }
+        });
+      }
     })();
   </script>
 </body>

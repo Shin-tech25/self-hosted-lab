@@ -718,6 +718,17 @@ class QuickOrderForm(forms.Form):
         return cleaned
 
 
+TRADE_HINTS = [
+    "Pursue positive expectancy and execute strictly by the rules.",
+    "Do not judge expectancy from a handful of trades—evaluate over 100 trades.",
+    "If 100 trades still yield negative expectancy, review the method and refine these hints.",
+    "Primary setups are around the 1H 20EMA or 80EMA. 20EMA entries are prone to noise stops—decide whether to (a) place a slightly wider SL and wait for the pullback, (b) widen SL and extend TP accordingly, or (c) combine both.",
+    "Be cautious with late-trend 1H 20EMA touches—the win rate degrades.",
+    "Prefer entries near the Mid price. To enter from Mid, submit the job when price is between Mid and Q1. Avoid Q3 entries; they can produce a max drawdown pattern around −10R.",
+    "While in a position, don’t stare at the charts. Stay relaxed—listen to chill music instead.",
+    "Aim for a 100× total return over 30 years. This corresponds to an average CAGR of about 17%. It may not seem dramatic annually, but it compounds into something extraordinary over the long term.",
+]
+
 @method_decorator(staff_member_required, name="dispatch")
 class QuickOrderView(FormView):
     template_name = "order.html"
@@ -742,6 +753,8 @@ class QuickOrderView(FormView):
             or open_positions.values_list("snapshot_ts", flat=True).first()
         )
         context["snapshot_ts"] = snapshot_ts
+
+        context["trade_hints"] = TRADE_HINTS
 
         return context
 
