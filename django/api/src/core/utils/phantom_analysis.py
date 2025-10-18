@@ -7,6 +7,15 @@ PhantomJob（magic）に紐づく ClosedPosition から
 - total_pnl    （ClosedPosition.profit の合計 / 口座通貨）
 を導出し、必要に応じて PhantomJob に保存します。
 
+方針（パス分析）:
+- オープン時は起点スロット（Q1/Mid/Q3）をイベント化
+- クローズ時は Outcome(TP/SL) をまず確定（コメント優先、なければ損益）
+  * TPのとき:
+      - 分割TP(Q1k1, Q1k2, Midk1) は遷移先スロット（Mid/Q3）をイベント化
+      - 最終TP(Q1k3, Midk2, Q3k1) は "TP" をイベント化（終端）
+  * SLのとき: "SL" をイベント化（終端）
+- 連続重複は圧縮し、最初の終端（TP/SL）以降は切り捨て
+
 使い方:
     # ドライラン（保存しない）
     python manage.py analyze_phantomjob <magic>
@@ -94,11 +103,26 @@ OPEN_SLOT_MAP: Dict[str, str] = {
     "Q3k1": "Q3",
 }
 
-# 終点（クローズ時）に付与するスロット（= 目標スロットの“名前”）
-CLOSE_SLOT_MAP: Dict[str, str] = {
-    "Q1k1": "Mid", "Q1k2": "Q3", "Q1k3": "TP",
-    "Midk1": "Q3", "Midk2": "TP",
-    "Q3k1": "TP",
+# ※ 旧 CLOSE_SLOT_MAP は廃止（Outcome考慮不足のため）
+
+
+# Outcome別の「クローズ時イベント」マップ
+# - TP時：分割TPは遷移先スロット、最終TPは "TP"
+# - SL時：全レッグ共通で "SL"
+CLOSE_EVENT_MAP: Dict[str, Dict[str, str]] = {
+    "TP": {
+        "Q1k1": "Mid",   # 分割利確 → Midへ遷移
+        "Q1k2": "Q3",    # 分割利確 → Q3へ遷移
+        "Q1k3": "TP",    # 最終TP → 終端
+        "Midk1": "Q3",   # 分割利確 → Q3へ遷移
+        "Midk2": "TP",   # 最終TP → 終端
+        "Q3k1": "TP",    # 最終TP → 終端
+    },
+    "SL": {
+        "Q1k1": "SL", "Q1k2": "SL", "Q1k3": "SL",
+        "Midk1": "SL", "Midk2": "SL",
+        "Q3k1": "SL",
+    },
 }
 
 # スロット→属するレッグ（集計用）
@@ -130,7 +154,7 @@ def _order_by_leg(d: dict) -> dict:
 # Q1k3 -> Risk=-R,   Return=+3R
 # Midk1 -> Risk=-2R, Return=+R
 # Midk2 -> Risk=-2R, Return=+2R
-# Q3k1 -> Risk=-3R,  Return=+R
+# Q3k1 -> Risk=-3R,  Return=+1R  （※ ret は 1R 設計想定／要件に応じ調整）
 SLOT_RISK_RETURN_PER_LEG_FALLBACK: Dict[str, Dict[str, float]] = {
     "Q1k1": {"risk": 1.0, "ret": 1.0},
     "Q1k2": {"risk": 1.0, "ret": 2.0},
@@ -205,7 +229,7 @@ def analyze_phantom_job(magic: int, *, dry_run: bool = True) -> Dict:
     """
     指定 magic の PhantomJob について:
       1) ClosedPosition を抽出
-      2) path_analysis を構築（open/close をイベント化→時系列→RLE圧縮）
+      2) path_analysis を構築（open/close をイベント化→時系列→RLE圧縮→終端で打ち切り）
       3) r_analysis   を構築（レッグ単位で TP/SL を積む→レッグR計算→スロット集計）
       4) total_pnl    を計算（ClosedPosition.profit の合計）
       5) dry_run=False の場合、PhantomJob に保存
@@ -267,13 +291,10 @@ def analyze_phantom_job(magic: int, *, dry_run: bool = True) -> Dict:
             continue
 
         open_slot = OPEN_SLOT_MAP.get(leg)
-        close_slot = CLOSE_SLOT_MAP.get(leg)
 
-        # パス分析用：open/close をイベント化
+        # パス分析用：オープンは起点スロットをイベント化
         if cp.open_time and open_slot:
             events.append((cp.open_time, open_slot))
-        if cp.close_time and close_slot:
-            events.append((cp.close_time, close_slot))
 
         # R 分布用：レッグ単位に結果を積む（コメント最優先 / 無ければ利益符号で補完）
         if cp.close_time is not None:
@@ -281,9 +302,18 @@ def analyze_phantom_job(magic: int, *, dry_run: bool = True) -> Dict:
                 outcome = outcome_from_cmt
             else:
                 outcome = "TP" if (cp.profit or 0) > 0 else "SL"
+
             per_leg_seq[leg].append(outcome)
             if open_slot:
                 per_slot_seq[open_slot].append(outcome)  # 参考用
+
+            # クローズ側イベント（Outcomeで分岐して文字列化）
+            close_token = CLOSE_EVENT_MAP.get(outcome, {}).get(leg)
+            if not close_token:
+                # 不測パターンがあれば Outcome をそのまま使う（フォールバック）
+                close_token = outcome
+
+            events.append((cp.close_time, close_token))
 
         # total_pnl を積み上げ（None ガード）
         if getattr(cp, "profit", None) is not None:
@@ -293,6 +323,12 @@ def analyze_phantom_job(magic: int, *, dry_run: bool = True) -> Dict:
     events.sort(key=lambda x: x[0])
     path_tokens = [tok for _, tok in events]
     path_analysis = _run_length_dedupe(path_tokens)
+
+    # 最初に現れた終端（TP/SL）以降は切り捨て（終端の混入防止）
+    for i, tok in enumerate(path_analysis):
+        if tok in {"TP", "SL"}:
+            path_analysis = path_analysis[: i + 1]
+            break
 
     # レッグ単位 R 集計（戻り時に by_leg_R はレッグ順固定）
     by_leg_R, total_R = _compute_R_per_leg(per_leg_seq, leg_riskret)
