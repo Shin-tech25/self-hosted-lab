@@ -187,7 +187,6 @@ class PhantomJob(models.Model):
     class TargetEMA(models.TextChoices):
         EMA20 = "EMA20", "1H 20EMA"
         EMA80 = "EMA80", "1H 80EMA"
-        EMA210 = "EMA210", "1H 320EMA"
     
     id = models.BigAutoField(primary_key=True)
     magic = models.BigIntegerField(default=generate_magic, unique=True, db_index=True)
