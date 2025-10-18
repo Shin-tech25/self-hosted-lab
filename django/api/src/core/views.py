@@ -673,39 +673,39 @@ class QuickOrderForm(forms.Form):
         sl = cleaned.get("sl")
         tp = cleaned.get("tp")
 
-        # === ① 入力チェック ===
+        # === 入力チェック ===
         if sl is None or tp is None:
             self.add_error(None, "Both SL and TP are required.")
 
         if sl == tp:
             self.add_error("tp", "SL and TP values are the same. Please set a different distance between them.")
 
-        # === ② side 判定（エラーがなければのみ設定）===
+        # === side 判定（エラーがなければのみ設定）===
         if not self.errors:
             cleaned["side"] = "BUY" if sl < tp else "SELL"
 
-        # === ③ 土日禁止チェック ===
+        # === 金土日制約 ===
         today_local = timezone.localdate()
-        if today_local.weekday() >= 5:
-            self.add_error(None, "Jobs cannot be submitted on weekends.")
+        if today_local.weekday() >= 4:
+            self.add_error(None, "Jobs cannot be submitted on Fridays and weekends.")
 
-        # === ④ 時間帯チェック（08:30〜22:30）===
+        # === 時間帯制約（08:30〜22:30）===
         now_local = timezone.localtime()
         minutes = now_local.hour * 60 + now_local.minute
         if not (510 <= minutes <= 1350):
             self.add_error(None, "Jobs can be submitted between 08:30 and 22:30 JST.")
-
-        # === ⑤ 1日1発 制約（JST基準のqueue_dateと揃える）===
+        
+        # === 1日1発制約（JST基準のqueue_dateと揃える）===
         account = cleaned.get("account")
         if account:
             if PhantomJob.objects.filter(account=account, queue_date=today_local).exists():
                 self.add_error(None, f"A job has already been queued today ({today_local}) for {account}.")
 
-            # ⑥ 同一アカウントで RUNNING があれば Submit 禁止
+            # 同一アカウントで RUNNING があれば Submit 禁止
             if PhantomJob.objects.filter(account=account, status=PhantomJob.Status.RUNNING).exists():
                 self.add_error(None, f"{account} already has a RUNNING job. Please wait until it finishes.")
 
-        # === ⑥ 必須チェック ===
+        # === 必須チェック ===
         if not cleaned.get("confirm_po"):
             self.add_error("confirm_po", "Make sure to confirm the perfect order of 20 / 80 / 320 EMA on the 1H timeframe.")
         if not cleaned.get("confirm_scn"):

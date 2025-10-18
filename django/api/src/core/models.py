@@ -293,6 +293,10 @@ class PhantomJob(models.Model):
                 name="ck_phantomjob_weekday_only",
                 check=~Q(queue_date__week_day__in=(1, 7)),
             ),
+            # models.CheckConstraint(
+            #     name="ck_phantomjob_mon_thu_only",
+            #     check=~Q(queue_date__week_day__in=(1, 6, 7)),
+            # ),
             # COMPLETED のときは finished_at が必須（あるいは claim/complete で必ず埋める運用）
             # models.CheckConstraint(
             #     name="phantomjob_completed_requires_finished_at",
