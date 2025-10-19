@@ -684,10 +684,10 @@ class QuickOrderForm(forms.Form):
         if not self.errors:
             cleaned["side"] = "BUY" if sl < tp else "SELL"
 
-        # === 金土日制約 ===
+        # === 土日制約 ===
         today_local = timezone.localdate()
-        if today_local.weekday() >= 4:
-            self.add_error(None, "Jobs cannot be submitted on Fridays and weekends.")
+        if today_local.weekday() >= 5:
+            self.add_error(None, "Jobs cannot be submitted on weekends.")
 
         # === 時間帯制約（08:30〜22:30）===
         now_local = timezone.localtime()
