@@ -1,6 +1,7 @@
 import os, sys
 from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
+from celery.schedules import crontab
 
 # --- load .env ---
 load_dotenv(find_dotenv())  # 近い上位まで探索して .env を読み込む
@@ -56,6 +57,8 @@ INSTALLED_APPS = [
     "core",
     "rest_framework_api_key",
     "rangefilter",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -171,3 +174,28 @@ LANGUAGE_CODE = "ja"
 TIME_ZONE = "Asia/Tokyo"
 USE_I18N = True
 USE_TZ = True
+
+# === Celery / Redis ===
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+# 結果は Redis か、MySQLに保存したければ django-celery-results を使う（どちらか片方）
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/1")
+# MySQLに保存するならこちら（上の RESULT_BACKEND をコメントアウト）
+# CELERY_RESULT_BACKEND = "django-db"     # django_celery_results
+# CELERY_CACHE_BACKEND  = "django-cache"
+
+# タイムゾーンをDjango側に合わせる
+CELERY_ENABLE_UTC = False
+CELERY_TIMEZONE = TIME_ZONE  # "Asia/Tokyo"
+
+# ワーカー安全系のデフォルト
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_TIME_LIMIT = 60 * 10          # ハング潰し
+CELERY_TASK_SOFT_TIME_LIMIT = 60 * 8
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 500   # メモリリーク耐性
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1     # 過剰プリフェッチ抑制
+CELERY_TASK_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_DEFAULT_QUEUE = "celery"
+CELERY_RESULT_EXPIRES = 60 * 60 * 6       # 6h
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False

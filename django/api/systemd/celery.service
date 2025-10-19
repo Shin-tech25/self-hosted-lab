@@ -1,0 +1,20 @@
+[Unit]
+Description=Celery Worker
+After=network.target redis.service
+Requires=redis.service
+
+[Service]
+Type=simple
+User=rocky
+Group=rocky
+EnvironmentFile=/opt/django/.env
+WorkingDirectory=/opt/django/api/src
+ExecStart=/opt/django/api/.venv/bin/celery -A config worker -l INFO -Q celery -n worker@%H
+# リソース/健全性
+Restart=always
+RestartSec=5s
+# メモリリーク耐性（任意）
+# ExecStartPost=/bin/renice -n 5 -p $MAINPID
+
+[Install]
+WantedBy=multi-user.target
