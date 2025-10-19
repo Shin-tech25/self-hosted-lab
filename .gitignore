@@ -51,3 +51,6 @@ __pycache__/
 
 # migrations
 **/migrations/
+
+# celerybeat-schedule
+celerybeat-schedule
